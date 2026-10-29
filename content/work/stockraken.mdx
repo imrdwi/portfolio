@@ -1,0 +1,156 @@
+---
+title: "Stockraken"
+---
+
+## System context
+
+Stockraken was a Laravel backend for inventory shared across warehouses, direct sales, Shopee stores, and point of sale. It tracked products by warehouse batch, handled stock movements and fulfillment, and exposed the APIs used by a separate Electron point-of-sale client.
+
+The Shopee integration had to map remote stores, products, variants, orders, and fulfillment states onto Stockraken's local records. Shopee access itself came through an existing private package; my work was in the application layer around that client. Broader marketplace support was discussed with the team, but the production work represented here centers on Shopee.
+
+I worked on Stockraken while employed by Java Multi Mandiri from July 2019 to July 2021. This was early in my career. My scope grew across the Laravel marketplace APIs, inventory and reporting workflows, permissions, and parts of the separate Electron client.
+
+## My scope
+
+<Scope>
+
+<Owned>
+
+- Application-layer APIs for Shopee stores, products, mappings, orders, and fulfillment.
+- Local-versus-Shopee stock comparison and manual stock synchronization.
+- Sales and warehouse reporting.
+- Role and permission work around marketplace and point-of-sale access.
+
+</Owned>
+
+<Contributed>
+
+- Inventory movement, stock-opname (physical stock count), and fulfillment workflows shared by sales channels.
+- Point-of-sale behavior in the separate Electron client and its Laravel API contracts.
+- Team planning for wider marketplace support and recovery when remote and local stock disagreed.
+
+</Contributed>
+
+<TeamOwned>
+
+Product direction, the wider inventory model, and marketplace expansion were team decisions. I implemented assigned workflows inside that model; the platform design and the underlying Shopee client package were not mine.
+
+</TeamOwned>
+
+</Scope>
+
+## Key engineering work
+
+<Story capability="Marketplace orders" title="Retrieving orders without hiding which store failed">
+
+<Problem>
+
+Stockraken could connect several Shopee stores. One store could return an API error while the others still had ready-to-ship orders that operators needed to process.
+
+</Problem>
+
+<Action>
+
+I implemented order retrieval per active store. The backend requested ready-to-ship orders, excluded orders already linked to a delivery, and fetched details in groups of 50. When Shopee returned an error for one store, the response retained that store's identifier, name, and provider message before continuing with the remaining stores.
+
+</Action>
+
+<Result>
+
+Before the change, a 404 or a 500 from one store stopped the order sync for every store. Afterwards the run skipped the failing store and carried on, and operators were shown which stores had failed and why, so they could retry those or ignore them and work with the orders that did arrive.
+
+</Result>
+
+</Story>
+
+<Story capability="Stock synchronization" title="A local variant and a Shopee item are separate records">
+
+<Problem>
+
+A local product variant and a Shopee item were separate records, and Shopee products could have their own variation identifiers. Without an explicit mapping, Stockraken could not show whether the two stock values agreed or know which remote record to update.
+
+</Problem>
+
+<Action>
+
+I implemented the application workflow for connecting a local variant to a Shopee store, item, and optional variation. The endpoint validated the local records and checked the remote item before storing the mapping. Product responses then exposed Shopee stock and Stockraken stock together.
+
+Local stock changes pushed the current variant stock to each valid linked Shopee store. The synchronization job supported background execution, but this flow invoked it inline during the request rather than through a background worker. A provider error therefore surfaced to the caller. I also added an authenticated manual synchronization endpoint that returned Shopee's error message when an operator-triggered correction failed.
+
+</Action>
+
+<Result>
+
+Stockraken had an explicit link between its inventory record and each Shopee listing. The two values drifted in practice: the desktop client called the sync endpoint directly and the push ran inline, so a Shopee rate limit or a failed request could leave local stock updated and the listing stale. The manual synchronization existed for that case, letting operators compare both values and push the local one again when an earlier update had not reached the marketplace.
+
+</Result>
+
+</Story>
+
+<Story capability="Warehouse reconciliation" title="Turning a physical stock difference into a recorded movement">
+
+<Problem>
+
+The quantity calculated from warehouse batches could differ from a physical count. Correcting only the aggregate number would remove the discrepancy without explaining whether stock had entered or left the warehouse.
+
+</Problem>
+
+<Action>
+
+I worked on the stock-opname flow that snapshots batch quantities per warehouse and records written stock, physical stock, and the difference through draft, processing, and completed states. Its adjustment paths could record an outbound activity and transaction or an inbound activity and new batch, depending on the correction being entered. Both paths used the central variant-stock update, which also invoked the Shopee synchronization job inline.
+
+</Action>
+
+<Result>
+
+A physical-count correction became an inventory movement with warehouse context instead of an unexplained overwrite. The corrected local quantity then entered the same marketplace-update path as other stock changes.
+
+</Result>
+
+</Story>
+
+<Story capability="Cross-channel backend" title="Supporting point-of-sale without a second inventory model">
+
+<Problem>
+
+The Electron point-of-sale client needed drafts, payouts, completed sales, and print data, but a shop-floor sale still had to affect the same warehouse inventory used by direct sales and Shopee.
+
+</Problem>
+
+<Action>
+
+I contributed to the Electron client and worked on its Laravel API boundary. Draft carts used the transaction and variant as their update key so lines could be changed or removed before completion. Finishing a sale created an outbound warehouse activity and transaction log, consumed warehouse batches, updated aggregate and sold stock, and marked the transaction complete.
+
+</Action>
+
+<Result>
+
+Point-of-sale activity used Stockraken's existing transaction and warehouse records, so the desktop client kept no stock ledger of its own.
+
+</Result>
+
+</Story>
+
+## Other contributions
+
+<Contributions>
+
+<Contribution label="Shopee order processing">
+
+Mapped remote order details and items into local records, rejected an order that had already been imported, and used a unique Shopee order number as a database-level duplicate guard.
+
+</Contribution>
+
+<Contribution label="Operational APIs">
+
+Worked across warehouse transfers, direct-sale delivery, dashboard summaries, sales and marketplace reports, role-based access, and print payloads used by operational clients.
+
+</Contribution>
+
+</Contributions>
+
+## Technical decisions
+
+Stockraken kept a local variant as its inventory record and stored the Shopee item and variation identifiers as mappings. Marketplace calls happened inline after local stock changes, so the design also needed comparison and manual synchronization when a remote update did not succeed.
+
+The Electron client was a separate application. The backend contract covered drafts, completion, payouts, and print data while inventory movement remained in Laravel.

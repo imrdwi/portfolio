@@ -1,0 +1,144 @@
+---
+title: "Prasmul ELI Career Companion"
+---
+
+<figure>
+  <Img src="/images/work/prasmuleli-cc/overview.png" alt="Prasmul ELI Career Companion public homepage with mentor showcase" width="2880" height="1620" loading="lazy" />
+  <figcaption>Public homepage (V1, server-rendered for indexing).</figcaption>
+</figure>
+
+## System context
+
+Prasmul ELI Career Companion supported executive courses, enrollment, payments, learner profiles, and career programs at Prasetiya Mulya University.
+
+The product changed while I worked on it. V0 used Vue; after the SEO team found that its search visibility did not meet the product's needs, V1 moved the public experience to Laravel-rendered pages. The backend remained Laravel and MySQL. Separate applications handled CoursePlayer content and GoCampus career classes, talks, and assessment entry points.
+
+I worked directly with the university from May 2022 to January 2024, alongside my SoftwareSeni employment. Backend was the center of my work: application-side SSO integration, Midtrans (an Indonesian payment gateway) payments, enrollment, CoursePlayer account provisioning and access handoff, program administration, and the interfaces around those workflows.
+
+## My scope
+
+<Scope>
+
+<Owned>
+
+- The application-side integration with the institution's private SSO package.
+- Midtrans checkout, callback verification, transaction-status checks, enrollment, and invoice flows.
+- Career Companion account provisioning into CoursePlayer and the authenticated content handoff.
+- Voucher-based enrollment and permission extensions across business modules.
+- Registration-source and career-interest profile fields.
+
+</Owned>
+
+<Contributed>
+
+- Frontend work across the Vue V0 and Laravel-rendered V1 applications.
+- GoCampus program pages and the personalized career-assessment entry flow.
+- Responsive Blade, Sass, Tailwind CSS, and jQuery work.
+- GitLab CI and release support.
+
+</Contributed>
+
+<TeamOwned>
+
+This was a direct client engagement, outside SoftwareSeni. The applications and their foundations predated parts of my work; the university owned program requirements and priorities, and other engineers contributed to CoursePlayer and GoCampus. I took my assigned work through implementation and delivery.
+
+</TeamOwned>
+
+</Scope>
+
+## Key engineering work
+
+<Story capability="Payments" title="Turning a verified payment into course access">
+
+<Problem>
+
+A Midtrans checkout began as a pending local order. Provider callbacks then had to be matched to that order and checked before payment state could grant access to direct courses or every course inside a purchased bundle.
+
+</Problem>
+
+<Action>
+
+I implemented Snap-token creation and configurable sandbox and production endpoints. The callback layer handled normal responses, webhooks, and provider-specific return formats; reconstructed the SHA-512 signature; queried Midtrans's status API; and distinguished capture or settlement from pending, denied, canceled, expired, and failed transactions.
+
+For a verified successful transaction, the backend completed the existing order, recorded earnings, enrolled the learner, generated the invoice PDF, and queued the confirmation email.
+
+</Action>
+
+<Result>
+
+Course access and invoicing followed confirmed Midtrans state instead of a browser return alone. Successful direct-course and bundle payments created the corresponding enrollments, while pending and failed states remained separate. I walked each transaction state through the Midtrans sandbox, one at a time, and watched what the backend did with each.
+
+</Result>
+
+<figure>
+  <Img src="/images/work/prasmuleli-cc/pending-orders.png" alt="Student dashboard showing pending orders with references, items, amounts, and payment status" width="2880" height="1620" loading="lazy" />
+  <figcaption>Pending student orders awaiting verified payment before enrollment.</figcaption>
+</figure>
+
+</Story>
+
+<Story capability="Cross-application workflow" title="CoursePlayer was a separate application with its own users">
+
+<Problem>
+
+CoursePlayer was a separate Laravel application with its own users and access tokens. New Career Companion accounts had to be provisioned there, existing accounts needed a backfill path, and a learner opening paid content should not have to complete a second interactive login.
+
+</Problem>
+
+<Action>
+
+I implemented both sides of the account-provisioning contract: Career Companion sent profile data through signed registration requests, and CoursePlayer accepted the fields and returned its local user representation and token. New registrations triggered provisioning without making a CoursePlayer failure block the local account, while a console command could process existing users and report failures per account. The HTTP client retried timeouts up to three times.
+
+Before handing off content, Career Companion checked ownership of the direct course or its bundle, requested a CoursePlayer access token, cached it per user for 60 minutes, and redirected to the original CoursePlayer content URL.
+
+</Action>
+
+<Result>
+
+New and existing Career Companion users had explicit provisioning paths into CoursePlayer. Learners with course access could open the corresponding content without a second interactive sign-in, and one failed account did not stop the bulk backfill from continuing. I ran the migration command over real Career Companion users. It carried on past the accounts CoursePlayer rejected as already existing and reported each failure on its own.
+
+</Result>
+
+</Story>
+
+## Other contributions
+
+<Contributions>
+
+<Contribution label="Sign-in across two generations">
+
+Integrated the institution's private SSO package at the application boundary, so the existing Google sign-in led into the Career Companion and Career Development Center context through the move from Vue (V0) to server-rendered Laravel pages (V1). The SEO team confirmed indexing against the sitemap after the move.
+
+</Contribution>
+
+<Contribution label="Voucher enrollment">
+
+Vouchers with active, expiry, and usage state, bulk code creation, and permission-aware administration. A redeemed voucher creates a completed order and attaches the learner to the course, so voucher access is an ordinary enrollment with an order record.
+
+</Contribution>
+
+<Contribution label="GoCampus career programs">
+
+Contributed to the GoCampus program experience combining Career Classes, Career Talks, Career Interest, a Career Development Plan, and Job Access. The Career Interest path resolved a per-student assessment URL, including links assigned through spreadsheet imports, and showed a clear unavailable state when no link had been assigned.
+
+</Contribution>
+
+<Contribution label="Permissions and administration">
+
+Extended granular permissions across lessons, teachers, taxes, reports, payment approvals, coupons, sliders, testimonials, FAQs, subcategories, and vouchers, then applied them to controllers and permission-aware administration actions.
+
+</Contribution>
+
+<Contribution label="Delivery">
+
+Worked across responsive server-rendered course and administration interfaces and adjusted GitLab CI for branch-specific deployment, cache rebuilding, migrations, and controlled seeding.
+
+</Contribution>
+
+</Contributions>
+
+## Technical decisions
+
+V1 served the course and program pages from Laravel instead of the Vue application, because the pages had to be indexable and server rendering was the shorter path to that. The cost was two rendering models in one product, and the constraint that kept it workable was a single login path into the Career Companion and Career Development Center context, so a learner never signed in twice to cross between them.
+
+Payment state came from the confirmed Midtrans callback, not from the browser returning to a success URL. The browser return is the easier signal to trust and the wrong one, since a learner can reach that URL without the transaction having settled. The same reasoning shaped the CoursePlayer backfill: the run reports each rejected account and carries on, because stopping the whole migration on one account already present in CoursePlayer would turn a routine collision into an outage of the provisioning path.

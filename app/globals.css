@@ -1,0 +1,344 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@plugin "@tailwindcss/typography";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--panel);
+  --color-card-foreground: var(--foreground);
+  --color-popover: var(--panel);
+  --color-popover-foreground: var(--foreground);
+  --color-primary: var(--signal);
+  --color-primary-foreground: var(--signal-foreground);
+  --color-secondary: var(--panel-strong);
+  --color-secondary-foreground: var(--foreground);
+  --color-muted: var(--panel-strong);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--constraint);
+  --color-accent-foreground: var(--constraint-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--rule);
+  --color-input: var(--rule-strong);
+  --color-ring: var(--signal);
+  --color-signal: var(--signal);
+  --color-constraint: var(--constraint);
+  --font-sans: var(--font-source-sans);
+  --font-heading: var(--font-barlow);
+  --font-mono: var(--font-ibm-plex-mono);
+  --radius-sm: 1px;
+  --radius-md: 2px;
+  --radius-lg: 3px;
+  --radius-xl: 4px;
+}
+
+:root {
+  --background: #edf4f1;
+  --foreground: #13282d;
+  --panel: #ffffff;
+  --panel-strong: #dce9e4;
+  --muted-foreground: #4b6066;
+  --rule: #a9c1bf;
+  --rule-strong: #748f91;
+  --signal: #0b6f67;
+  --signal-foreground: #ffffff;
+  --constraint: #945c00;
+  --constraint-foreground: #ffffff;
+  --destructive: #a22c29;
+  color-scheme: light;
+}
+
+.dark {
+  --background: #081016;
+  --foreground: #edf5f3;
+  --panel: #10202a;
+  --panel-strong: #172b35;
+  --muted-foreground: #a8b7ba;
+  --rule: #2b4450;
+  --rule-strong: #48636d;
+  --signal: #65dccb;
+  --signal-foreground: #071411;
+  --constraint: #f1b955;
+  --constraint-foreground: #1d1403;
+  --destructive: #ff7b72;
+  color-scheme: dark;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    @apply bg-background font-sans text-foreground;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply min-w-0 bg-background text-foreground antialiased;
+    font-family: var(--font-source-sans), sans-serif;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-barlow), sans-serif;
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  ::selection {
+    background: var(--signal);
+    color: var(--signal-foreground);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--signal);
+    outline-offset: 3px;
+  }
+}
+
+@layer components {
+  .site-shell {
+    @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-10;
+  }
+
+  .section-rule {
+    @apply border-t border-border;
+  }
+
+  .technical-label {
+    @apply font-mono text-[0.7rem] font-semibold uppercase tracking-[0.16em] text-signal;
+  }
+
+  /* Quieter sibling of .technical-label, for field labels inside a record
+     (definition lists, card captions, story beats) rather than section eyebrows.
+     Keeping section eyebrows signal-coloured and everything else muted is what
+     stops a page of ten mono labels from flattening into one visual weight. */
+  .field-label {
+    @apply font-mono text-[0.7rem] font-semibold uppercase tracking-[0.16em] text-muted-foreground;
+  }
+
+  .control-surface {
+    @apply border border-border bg-card;
+    box-shadow: 4px 4px 0 color-mix(in srgb, var(--rule) 45%, transparent);
+  }
+
+  .blueprint-grid {
+    background-image:
+      linear-gradient(to right, color-mix(in srgb, var(--rule) 35%, transparent) 1px, transparent 1px),
+      linear-gradient(to bottom, color-mix(in srgb, var(--rule) 35%, transparent) 1px, transparent 1px);
+    background-size: 32px 32px;
+  }
+}
+
+.prose {
+  --tw-prose-body: var(--muted-foreground);
+  --tw-prose-headings: var(--foreground);
+  --tw-prose-lead: var(--muted-foreground);
+  --tw-prose-links: var(--signal);
+  --tw-prose-bold: var(--foreground);
+  --tw-prose-counters: var(--muted-foreground);
+  --tw-prose-bullets: var(--signal);
+  --tw-prose-hr: var(--rule);
+  --tw-prose-quotes: var(--foreground);
+  --tw-prose-quote-borders: var(--signal);
+  --tw-prose-code: var(--foreground);
+  --tw-prose-captions: var(--muted-foreground);
+}
+
+.prose h2 {
+  margin-top: 3rem;
+  border-top: 1px solid var(--rule);
+  padding-top: 1.5rem;
+  font-size: 1.75rem;
+  letter-spacing: -0.02em;
+}
+
+/* Let enlarged diagrams scroll inside their figure instead of widening the grid. */
+.prose figure {
+  min-width: 0;
+}
+
+/* An overview figure leads straight into the first section heading. Without
+   this, the heading's full section margin leaves a 48px void above the rule
+   against 24px below it. Trimming both sides to 1.5rem keeps the break
+   visually balanced. */
+.prose figure:has(+ h2) {
+  margin-bottom: 1.5rem;
+}
+
+.prose figure + h2 {
+  margin-top: 1.5rem;
+}
+
+/* The article wrapper carries the top rule with no padding of its own, so a
+   leading figure sets its own offset: 1.5rem, the same breathing room a
+   section heading gets below its rule. */
+.prose > figure:first-child {
+  margin-top: 1.5rem;
+}
+
+/* Same story when the article opens straight into a heading (case studies
+   without an overview figure): it sits under the wrapper's rule with the
+   same 1.5rem offset instead of drawing a second rule of its own. */
+.prose > h2:first-child {
+  margin-top: 1.5rem;
+  border-top: 0;
+  padding-top: 0;
+}
+
+.prose h3 {
+  margin-top: 2rem;
+  font-size: 1.3rem;
+}
+
+.prose p,
+.prose li {
+  line-height: 1.75;
+}
+
+.prose code {
+  border: 1px solid var(--rule);
+  background: var(--panel-strong);
+  padding: 0.1rem 0.35rem;
+  font-weight: 500;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@media print {
+  @page {
+    size: A4;
+    margin: 10mm 12mm;
+  }
+
+  /* Every colour token has to be listed here. `.dark` and `:root` have equal
+     specificity, so this block wins only on source order, and only for the
+     tokens it names -- anything omitted keeps its dark value on paper. */
+  :root {
+    --background: #ffffff;
+    --foreground: #10191c;
+    --panel: #ffffff;
+    --panel-strong: #dce9e4;
+    --muted-foreground: #33474d;
+    --rule: #aebbbc;
+    --rule-strong: #748f91;
+    --signal: #075f58;
+    --signal-foreground: #ffffff;
+    --constraint: #7a4c00;
+    --constraint-foreground: #ffffff;
+    --destructive: #8f2724;
+    color-scheme: light;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  body {
+    background: #ffffff;
+    font-size: 9pt;
+  }
+
+  main {
+    display: block;
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  article {
+    break-inside: avoid;
+  }
+
+  section {
+    break-inside: auto;
+  }
+
+  .print-resume .resume-page-break-before {
+    break-before: page;
+  }
+
+  .print-resume header {
+    grid-template-columns: 1fr auto;
+    gap: 1rem;
+    padding-bottom: 1rem;
+  }
+
+  .print-resume header h1 {
+    font-size: 34pt;
+  }
+
+  .print-resume header p {
+    margin-top: 0.45rem;
+    font-size: 10pt;
+    line-height: 1.35;
+  }
+
+  .print-resume section {
+    padding-block: 0.75rem;
+  }
+
+  .print-resume .space-y-9 {
+    gap: 0.65rem;
+  }
+
+  .print-resume article p,
+  .print-resume article li {
+    line-height: 1.35;
+  }
+
+  .print-resume article ul {
+    margin-top: 0.35rem;
+    gap: 0.15rem;
+  }
+}
+
+/* Keep the page behind an open image lightbox from scrolling. The stable
+   gutter stops the page shifting sideways as the scrollbar goes away, which
+   would also move the spot the image flies back to. */
+html:has(dialog[open]) {
+  overflow: hidden;
+  scrollbar-gutter: stable;
+}
+
+/* Only the backdrop fades; the image itself flies between the page and the
+   lightbox (see ImageLightbox). The dialog closes once the flight home has
+   finished, so the fade out is driven by data-closing, not by [open]. */
+.lightbox::backdrop {
+  opacity: 0;
+  transition: opacity 320ms ease;
+}
+
+.lightbox[open]::backdrop {
+  opacity: 1;
+}
+
+.lightbox[data-closing]::backdrop {
+  opacity: 0;
+}
+
+@starting-style {
+  .lightbox[open]::backdrop {
+    opacity: 0;
+  }
+}

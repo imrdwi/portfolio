@@ -1,0 +1,161 @@
+---
+title: "ES3-KULA"
+---
+
+<figure>
+  <Img src="/images/work/es3-kula/overview.png" alt="ES3-KULA dashboard with shortcut actions and an employee distribution chart" width="2880" height="1620" loading="lazy" />
+  <figcaption>ES3-KULA dashboard overview.</figcaption>
+</figure>
+
+## System context
+
+ES3-KULA was an internal ERP and CRM at Java Multi Mandiri. It brought customer inquiries, product and supplier research, quotations, order confirmations, invoices, customer receipts, delivery, reporting, and internal issue management into one Laravel application.
+
+The business owner supplied the operational requirements and priorities. I implemented assigned slices inside an existing team-built system, translating those requirements into records, status transitions, permission-aware interfaces, PDFs, exports, and notifications.
+
+I worked on ES3-KULA while employed by Java Multi Mandiri from July 2019 to July 2021. This was early in my career. The application used Laravel 5.5 and MySQL with server-rendered Blade, jQuery, Bootstrap, DataTables, and AJAX endpoints. Toward the end of my time there, the business moved the ERP onto Odoo, and my work shifted to Python module development on that platform.
+
+## My scope
+
+<Scope>
+
+<Owned>
+
+- The invoice API, including item calculations, payment receipts, status handling, reporting, and PDF output.
+- Internal sales orders generated from published invoices.
+- The IT issue and repair-reporting workflow, including attachments, activity history, notifications, exports, and later multi-assignee support.
+- The Python Odoo modules that carried ES3-KULA's functionality onto the new platform.
+
+</Owned>
+
+<Contributed>
+
+- Modernization of the existing order-confirmation workflow and its newer API controller.
+- Delivery-order task lists, invoice-to-delivery behavior, serialized-item handling, and PDF output.
+- Document and inquiry reporting, grouped notifications, Blade/DataTables interfaces, localization, and permission-aware actions.
+
+</Contributed>
+
+<TeamOwned>
+
+The sales-quotation, CRM, supplier, product-catalog, inventory, and permission foundations predated or were developed alongside my work. Product direction and the overall ERP model remained team and business-owner decisions.
+
+</TeamOwned>
+
+</Scope>
+
+## Key engineering work
+
+<Story capability="Business workflow" title="A confirmed order does not always become one invoice">
+
+<Problem>
+
+An order confirmation did not always become one invoice paid in one step. Finance needed to choose invoice items and quantities, apply their discounts and taxes, publish the document with payment and shipping details, record partial receipts, and keep the parent order's invoice state understandable.
+
+</Problem>
+
+<Action>
+
+I implemented the invoice feature from listing and creation through payment and reporting. Item quantity changes recalculated subtotal, discount, tax, and amount before updating invoice totals. Publishing required the relevant invoice number, customer purchase-order reference, payment method, and shipping data.
+
+The payment path recorded customer receipts, rejected an amount that exceeded the remaining invoice balance, and marked the invoice fully paid when receipts reached the total. Sending, cancellation, and partial-versus-complete invoice states also propagated back to the order confirmation. Published invoices could produce PDF documents and an internal sales order carrying the same customer, payment, and shipping context.
+
+</Action>
+
+<Result>
+
+Finance could record partial receipts without exceeding the remaining invoice balance, and reaching the total marked the invoice as paid. I entered receipts against a real invoice on both sides of that boundary. An amount above the remaining balance was rejected. An amount matching it exactly was accepted. A guard that also refused the exact balance would have failed that second case. Invoice state propagated to the parent confirmation, while a published invoice carried the same customer, payment, and shipping context into its internal sales order.
+
+</Result>
+
+<figure>
+  <Img src="/images/work/es3-kula/invoice-list.png" alt="Invoice list showing invoice numbers, linked order confirmations, totals, and valid/invalid payment status" width="2880" height="1620" loading="lazy" />
+  <figcaption>Invoice list with partial-versus-complete payment state carried back to the order confirmation.</figcaption>
+</figure>
+
+</Story>
+
+<Story capability="Issue management" title="One issue, several active technicians">
+
+<Problem>
+
+The original IT issue flow assumed one assigned technician. Some incidents required several people, while access checks, activity history, notifications, filters, and closed-issue reports still needed to describe who was actively responsible.
+
+</Problem>
+
+<Action>
+
+I built the issue and repair-reporting slice, including creation, assignment, responses, attachments, activity records, notifications, and localized interfaces. I later changed assignment to a many-to-many relation, migrated the existing assignment data, and updated the API and interfaces to use active assignees.
+
+I also extended the closed-issue report and spreadsheet export with assignees, repair action, data-loss status, opened and closed dates, duration, priority-based SLA status, and user rating.
+
+</Action>
+
+<Result>
+
+One issue could carry several active technicians without losing its reporter, activity, repair, or reporting context. After the migration I compared row counts before and after, spot-checked existing issues for their original assignee, and opened a closed issue to see whether its history had survived. It had. Open issues were the ones anyone would check; the closed ones were where a silent loss would have sat unnoticed. Operational exports represented the same assignment model used by the application.
+
+</Result>
+
+<figure>
+  <Img src="/images/work/es3-kula/issue-list.png" alt="Closed issue report list showing categories, handlers, dates, statuses, and ratings" width="2880" height="1620" loading="lazy" />
+  <figcaption>Issue report list after the move to multiple active technicians, with history preserved.</figcaption>
+</figure>
+
+</Story>
+
+<Story capability="Workflow handoff" title="Combining quotations into an order confirmation">
+
+<Problem>
+
+Sales quotations already contained customer, salesperson, item, tax, discount, shipping, and validity data. Order confirmation needed to reuse that work while preventing expired or already-attached quotations from being treated as new input.
+
+</Problem>
+
+<Action>
+
+I contributed to the existing order-confirmation workflow and implemented much of its newer API surface. The setup path filtered valid deal quotations, grouped the selected records under a draft confirmation, copied their items, and recalculated payment data. The interface exposed quotation validity and let staff select or adjust confirmation items before publishing.
+
+Publishing then recorded finance and change notes and set the confirmation to waiting or approved according to whether the expected quotation items had been selected.
+
+</Action>
+
+<Result>
+
+Staff could move selected quotation data into one confirmation while retaining the customer, salesperson, item, pricing, and validity context needed by the invoice workflow that followed.
+
+</Result>
+
+</Story>
+
+## Other contributions
+
+<Contributions>
+
+<Contribution label="Delivery orders">
+
+Contributed to creating delivery orders from invoice items, selecting available serial numbers, preventing publication while an item lacked a serial number, marking selected serials as sold, and exposing delivery status lists and PDF output.
+
+</Contribution>
+
+<Contribution label="Permissions and work queues">
+
+Applied the existing permission model across owned workflows. Access could come from a job position, a personal grant, or an optional group, while dashboard queues exposed pending work such as quotation, invoice, delivery, document, and issue tasks according to the user's access.
+
+</Contribution>
+
+<Contribution label="Odoo migration">
+
+The business moved ES3-KULA off its custom Laravel stack and onto Odoo. I wrote the Python Odoo modules that reproduced the original functionality on the new platform, and they went into production and were used by staff before I left.
+
+Earlier, on an unmerged 2021 feature branch, I had built a Laravel-side prototype that authenticated per-user Odoo credentials and adapted Odoo customer search, sorting, and pagination into the application's server-side DataTables format. That prototype only demonstrated customer visibility from Odoo and was not a production rollout.
+
+</Contribution>
+
+</Contributions>
+
+## Technical decisions
+
+Keeping these workflows in the existing Laravel monolith matched how the business operated: quotations, confirmations, invoices, receipts, and delivery documents shared records and status. The tradeoff was that controllers often combined validation, persistence, calculations, document generation, and interface responses, which made tracing the full workflow important before changing one step.
+
+Blade, jQuery, Bootstrap, and DataTables were already established in the application. I used those patterns so each new workflow stayed consistent with the rest of the application.

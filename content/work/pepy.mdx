@@ -1,0 +1,164 @@
+---
+title: "Pepy Time Tracker"
+---
+
+<figure>
+  <Img src="/images/work/pepy/overview.png" alt="Pepy reports grouping timesheets by project and client with duration, percentage, and a clocked-hours chart" width="2880" height="1620" loading="lazy" />
+  <figcaption>Pepy reports overview.</figcaption>
+</figure>
+
+## System context
+
+Pepy is SoftwareSeni's own multi-tenant time-tracking and planning product. It pulls work items from Trello, GitLab, Google Calendar, and the internal HR system into the same timesheets. I worked on it as an internal SoftwareSeni assignment from March to August 2022, with a Node.js backend role.
+
+Pepy keeps the same data in two places. MySQL holds the transactional records: time entries, task relationships, project membership, and approvals. Elasticsearch holds a copy shaped for filtering across date range, project, user, and status. Most of my work went into keeping that copy correct and making it rebuildable without taking search down.
+
+Pepy was used inside SoftwareSeni and by Agentpoint, a long-standing SoftwareSeni client. Issues reported inside SoftwareSeni came directly from the team using it, not through a support queue.
+
+## My scope
+
+<Scope>
+
+<Owned>
+
+- The MySQL-to-Elasticsearch sync layer: per-model field lists and the schema converters in both directions.
+- Alias-based reindexing, so search can be rebuilt without an outage.
+- The Trello, GitLab, and Google OAuth integrations, including token lifecycle and multi-tenant redirect handling.
+- Sub-projects, from migration through to a searchable endpoint.
+
+</Owned>
+
+<Contributed>
+
+- Reporting and reconciliation query work.
+- Cross-system field propagation with the adjacent internal system.
+
+</Contributed>
+
+<TeamOwned>
+
+An existing product with a tech lead who reviewed every merge request before it reached staging. Product direction sat with the team.
+
+</TeamOwned>
+
+</Scope>
+
+## Key engineering work
+
+<Story capability="Data synchronization" title="A second copy of the data can drift">
+
+<Problem>
+
+A derived copy drifts whenever the source schema or the conversion logic changes without the other being updated. A column added to a model does not reach search, or a converted value is indexed in the wrong shape, and the first sign of it is a filter returning the wrong set. Neither store reports an error, because from each side the data it holds is valid.
+
+</Problem>
+
+<Action>
+
+Each model declares which of its columns matter to search in an explicit field list, and has a matching pair of conversion functions between the database shape and the search shape. Adding a column is therefore three coordinated changes, not one: the migration, the field list, and both converters. I built and maintained that across the models I worked on.
+
+</Action>
+
+<Result>
+
+The mapping between the two stores was declared in code next to the model. That gave reviewers an explicit checklist for a schema change: the migration, field list, and converters. It made omissions easier to identify, without guaranteeing that every omission would be caught in review.
+
+</Result>
+
+</Story>
+
+<Story capability="Operational safety" title="Rebuilding search without taking it down">
+
+<Problem>
+
+A derived copy needs a rebuild path, because it will eventually be wrong. Rebuilding by emptying and repopulating the index that search is currently reading from would take search down for the length of the reindex.
+
+</Problem>
+
+<Action>
+
+I wrote migrations and seeders that reindex tables into Elasticsearch, either one model at a time or across the board, so a rebuild is one repeatable command. The build script checks whether an index alias exists for a given model and creates it if not. With the alias in place, a rebuild indexes into a new index and repoints the alias to it, so the live index is never truncated.
+
+</Action>
+
+<Result>
+
+Reindexing became a repeatable operation without requiring the live search index to be emptied first. I confirmed the production Elasticsearch and Node versions with DevOps before relying on any of it, and had them verify the affected index in production after a reindex. That check alone does not establish how writes arriving during a rebuild reach the new index.
+
+</Result>
+
+</Story>
+
+<Story capability="Third-party integration" title="OAuth is mostly about what happens after the token">
+
+<Problem>
+
+Pepy needed to pull task data from the tools teams already used, so the Trello, GitLab, and Google connections had to be built, not taken from an SDK. Most of the work was not the code-for-token exchange but the failure cases around it and the multi-tenant setup.
+
+</Problem>
+
+<Action>
+
+I built the flows and the recovery around them. When a stored token has been invalidated upstream, it has to be removed along with the saved board and list settings. Otherwise the user is left with a dead connection they cannot re-establish. Board and list names are stored alongside their identifiers so the settings screen can show readable names. Trello will not return a user's email unless the correct scope was requested at authorization time. Adding that scope later means asking every connected user to reauthorize, so it had to be settled before rollout. On the Google side, an unverified tenant needed its redirect URI rewritten to the registration subdomain, since one registered callback does not cover every tenant.
+
+Partway through, ownership of the Trello token moved to the frontend, so I rebuilt that connection against the new arrangement and closed the original merge request instead of trying to salvage it.
+
+</Action>
+
+<Result>
+
+A user can disconnect and reconnect without support intervention, tenants that are not yet verified can still complete a Google sign-in, and the required Trello scope was established before rollout, avoiding a later forced reauthorization of connected users. I ran the disconnect and reconnect path end to end instead of only checking that the token row had been removed. QA and I then both signed in from a tenant whose subdomain was not registered as a Google callback, and the rewritten redirect URI carried the sign-in through.
+
+</Result>
+
+</Story>
+
+## Other contributions
+
+<Contributions>
+
+<Contribution label="Sub-projects">
+
+A feature taken end to end: new table and migrations, schema and validation, the Elasticsearch schema and index alias, the search endpoint, and the foreign key added to tasks and todos.
+
+</Contribution>
+
+<Contribution label="Cross-system fields">
+
+When billable time became something the business tracked, the flag had to exist in Pepy, in its validation, in the reporting query, and in the request sent to the adjacent internal system. Shipping one side before the other leaves the field missing without either system reporting an error.
+
+</Contribution>
+
+<Contribution label="Reporting">
+
+Reworked reconciliation and summary report queries, and wrote SQL to answer business questions about plan membership and registration windows.
+
+</Contribution>
+
+<Contribution label="API documentation">
+
+Each resource carried a Swagger schema alongside its validation, so the documentation and the validation could not drift far apart.
+
+</Contribution>
+
+<Contribution label="Internal system sync">
+
+Projects, tasks, and sub-projects synced from the internal HR system. I worked on not syncing already-completed projects, a duplicate-entry bug, and an out-of-memory condition in the cron and queue path that surfaced on the other system's staging environment.
+
+</Contribution>
+
+<Contribution label="Observability">
+
+Sentry and New Relic covered production behavior, and I used their logs to confirm whether a reported issue was reaching the server at all before looking for it in code.
+
+</Contribution>
+
+</Contributions>
+
+## Technical decisions
+
+Splitting search out of MySQL suited the filtered, multi-field queries across projects, users, dates, and statuses that the product mostly runs. The cost is the work described above: a second store to keep correct, to rebuild safely, and to account for in every schema change.
+
+Partway through the sub-projects work I renamed a column after it became clear the identifier belonged to the adjacent internal system and not to Pepy. The migration was already written, but leaving the original name would have been misleading to read later.
+
+The product site is [pepy.app](https://pepy.app); tenant applications and source are private.

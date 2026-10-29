@@ -1,0 +1,331 @@
+---
+title: "Funraisin"
+---
+
+<figure>
+  <Img src="/images/work/funraisin/overview.png" alt="Funraisin admin dashboard showing a yearly revenue overview with entrant, team, organisation, activity, and page-view counts" width="2880" height="1620" loading="lazy" />
+  <figcaption>Funraisin admin dashboard overview.</figcaption>
+</figure>
+
+## System context
+
+Funraisin is a fundraising platform for charity events, peer-to-peer campaigns, donations, ticketing, and community fundraising. It runs on CodeIgniter with MySQL, jQuery, and Bootstrap.
+
+The constraints matter more here than the stack does. The system encodes years of fundraising rules, and live campaigns depend on those rules behaving exactly as they do today. It has also accumulated template generations: legacy templates, a classic builder, a visual builder, and the current donation block. A setting frequently has to exist at both platform and event level, and render correctly in all four.
+
+Many tickets touch money: donations, matched giving, regular giving, refunds, receipting, and tax. For payment-related work, correctness under concurrency and compatibility with existing configuration are recurring constraints.
+
+I joined Funraisin through SoftwareSeni in June 2025 and am still on it. The role is full-stack because the same change often spans donation logic, admin configuration, scheduled processing, and page templates.
+
+Each client runs its own Funraisin site on its own domain, and I get access to one only when investigating an issue on it. With no platform-wide view of donation volume or revenue, the stories below report what I tested and observed, not production totals.
+
+The codebase is CodeIgniter 3 with no automated test suite. A QA engineer has started adding Playwright end-to-end tests, but my own changes are verified by reproducing the issue on demo and bugfix branches, often with scripted dummy data or a charity's Stripe test keys, and attaching before-and-after evidence to the ticket. Where a story below says there is no regression test, that is why.
+
+## My scope
+
+<Scope>
+
+<Owned>
+
+- The concurrency fixes in the matched-giving and raffle payment paths.
+- PURL (personal campaign link) import behavior, plus its expiry and usage modes.
+- The Intelligent Giving rollout across four template generations, behind a per-platform switch.
+- A long run of payments, ticketing, and sync defect work.
+- Peer review of the pod's pull requests, assigned as scheduled work alongside the ticket queue.
+
+</Owned>
+
+<Contributed>
+
+- The regular-giving upsell across four page templates.
+- Ticketing work around ticket-holder and entrant record linking.
+
+</Contributed>
+
+<TeamOwned>
+
+I take assigned work through planning, implementation, review, and release. Designs, priorities, and final release decisions are shared across the pod.
+
+</TeamOwned>
+
+</Scope>
+
+In one peer review, I flagged inconsistent donation-reference parameters in another engineer's change, then checked the follow-up before approving it.
+
+## Key engineering work
+
+<Story capability="Concurrency in a payment path" title="Matched giving could pay past its cap">
+
+<Problem>
+
+Matched giving lets a sponsor match donations up to a cap, and strict handling is meant to stop matching once the cap is reached. It did not hold under concurrency. Two donations submitted at the same instant could both read the remaining match pool before either had written its own match, so both matched and the sponsor was charged past the cap.
+
+</Problem>
+
+<Action>
+
+I moved the calculation into the model used by donation pages, then added a per-pool MySQL named lock around the calculation and matched-donation insert. I applied the lock across seven donation paths and wrapped each use in `try`/`finally` so it releases when processing succeeds or throws.
+
+</Action>
+
+<Result>
+
+Matched-giving requests for the same pool now pass through one locked calculation and insert path. I submitted two donations to the same pool at the same moment from separate browser sessions, then read the donation rows back to see that one match calculation had landed and the total had stayed under the sponsor's cap. This was a manual check, not a load test: it covers a genuine concurrent submission and says nothing about sustained volume.
+
+</Result>
+
+<figure>
+<Diagram label="Matched-giving concurrency">
+<svg viewBox="0 0 760 320" role="img" aria-labelledby="mg-title mg-desc">
+<title id="mg-title">Matched giving concurrency, before and after</title>
+<desc id="mg-desc">Before: two donations read the same pool balance and both insert a match, overcharging the sponsor. After: requests serialize through a per-pool lock around the remaining-balance check and insert.</desc>
+<defs>
+<marker id="mg-arrow-amber" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="var(--constraint)"></path></marker>
+<marker id="mg-arrow-teal" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="var(--signal)"></path></marker>
+<marker id="mg-arrow-muted" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="var(--muted-foreground)"></path></marker>
+</defs>
+
+<text x="0" y="12" fill="var(--muted-foreground)" fontFamily="var(--font-ibm-plex-mono), monospace" fontSize="10" fontWeight="500" letterSpacing="1.4">BEFORE</text>
+<rect x="0" y="34" width="110" height="40" fill="var(--panel)" stroke="var(--rule)" strokeWidth="1"></rect>
+<text x="55" y="59" textAnchor="middle" fill="var(--foreground)" fontFamily="var(--font-barlow), sans-serif" fontSize="13" fontWeight="600">Request A</text>
+<rect x="0" y="88" width="110" height="40" fill="var(--panel)" stroke="var(--rule)" strokeWidth="1"></rect>
+<text x="55" y="113" textAnchor="middle" fill="var(--foreground)" fontFamily="var(--font-barlow), sans-serif" fontSize="13" fontWeight="600">Request B</text>
+<rect x="300" y="57" width="160" height="48" fill="var(--panel)" stroke="var(--rule)" strokeWidth="1"></rect>
+<text x="380" y="80" textAnchor="middle" fill="var(--foreground)" fontFamily="var(--font-barlow), sans-serif" fontSize="13" fontWeight="600">Pool balance</text>
+<text x="380" y="95" textAnchor="middle" fill="var(--muted-foreground)" fontFamily="var(--font-ibm-plex-mono), monospace" fontSize="10">same read</text>
+<rect x="620" y="57" width="140" height="48" fill="var(--panel)" stroke="var(--rule)" strokeWidth="1"></rect>
+<text x="690" y="80" textAnchor="middle" fill="var(--foreground)" fontFamily="var(--font-barlow), sans-serif" fontSize="13" fontWeight="600">Inserts</text>
+<text x="690" y="95" textAnchor="middle" fill="var(--constraint)" fontFamily="var(--font-ibm-plex-mono), monospace" fontSize="10">2 matches — over cap</text>
+<path d="M110 54 H292" fill="none" stroke="var(--constraint)" strokeWidth="3.5" markerEnd="url(#mg-arrow-amber)"></path>
+<path d="M110 108 H292" fill="none" stroke="var(--constraint)" strokeWidth="3.5" markerEnd="url(#mg-arrow-amber)"></path>
+<path d="M460 81 H612" fill="none" stroke="var(--constraint)" strokeWidth="3.5" markerEnd="url(#mg-arrow-amber)"></path>
+<text x="380" y="152" textAnchor="middle" fill="var(--muted-foreground)" fontFamily="var(--font-source-sans), sans-serif" fontSize="12">Both requests read the same remaining balance, so both insert a match.</text>
+
+<line x1="0" y1="180" x2="760" y2="180" stroke="var(--rule)" strokeWidth="1"></line>
+
+<text x="0" y="212" fill="var(--muted-foreground)" fontFamily="var(--font-ibm-plex-mono), monospace" fontSize="10" fontWeight="500" letterSpacing="1.4">AFTER</text>
+<rect x="0" y="234" width="120" height="40" fill="var(--panel)" stroke="var(--rule)" strokeWidth="1"></rect>
+<text x="60" y="259" textAnchor="middle" fill="var(--foreground)" fontFamily="var(--font-barlow), sans-serif" fontSize="13" fontWeight="600">Request</text>
+<rect x="180" y="234" width="150" height="40" fill="var(--panel)" stroke="var(--rule)" strokeWidth="1"></rect>
+<text x="255" y="252" textAnchor="middle" fill="var(--signal)" fontFamily="var(--font-ibm-plex-mono), monospace" fontSize="10" fontWeight="600">lock → check → insert</text>
+<text x="255" y="265" textAnchor="middle" fill="var(--muted-foreground)" fontFamily="var(--font-ibm-plex-mono), monospace" fontSize="9">one at a time</text>
+<rect x="380" y="234" width="120" height="40" fill="var(--panel)" stroke="var(--rule)" strokeWidth="1"></rect>
+<text x="440" y="259" textAnchor="middle" fill="var(--foreground)" fontFamily="var(--font-barlow), sans-serif" fontSize="13" fontWeight="600">Unlock</text>
+<rect x="620" y="234" width="140" height="40" fill="var(--panel)" stroke="var(--rule)" strokeWidth="1"></rect>
+<text x="690" y="252" textAnchor="middle" fill="var(--signal)" fontFamily="var(--font-ibm-plex-mono), monospace" fontSize="10" fontWeight="600">1 match</text>
+<text x="690" y="265" textAnchor="middle" fill="var(--muted-foreground)" fontFamily="var(--font-ibm-plex-mono), monospace" fontSize="9">under cap</text>
+<path d="M120 254 H172" fill="none" stroke="var(--muted-foreground)" strokeWidth="1.5" markerEnd="url(#mg-arrow-muted)"></path>
+<path d="M330 254 H372" fill="none" stroke="var(--signal)" strokeWidth="3.5" markerEnd="url(#mg-arrow-teal)"></path>
+<path d="M500 254 H612" fill="none" stroke="var(--signal)" strokeWidth="3.5" markerEnd="url(#mg-arrow-teal)"></path>
+<text x="0" y="302" fill="var(--muted-foreground)" fontFamily="var(--font-source-sans), sans-serif" fontSize="12">A per-pool named lock serializes the balance check and the matched-donation insert.</text>
+</svg>
+</Diagram>
+<figcaption>Only the ordering changes. The same calculation runs on the same seven donation paths, one request at a time per pool.</figcaption>
+</figure>
+
+</Story>
+
+<Story capability="Concurrency in a payment path" title="Two raffle requests creating the same sale">
+
+<Problem>
+
+After the matched-giving fix, I checked the raffle sale path for the same race and found it there. Concurrent raffle requests could both try to create the sale linked to the same purchase. A fixed delay hid the race without controlling which request created the record.
+
+</Problem>
+
+<Action>
+
+I made creation atomic by claiming the temporary raffle sale record &mdash; deleting it and checking affected rows. The winner inserts the raffle sale. Losers see zero affected rows, wait 2 seconds, and look up the committed sale by order number instead of creating a duplicate.
+
+</Action>
+
+<Result>
+
+I reproduced the race with a script that replayed a completed payment's PayPal webhook payload as 20 concurrent requests alongside the genuine one, so 21 hit the path at once. Before the fix, it left 21 sale records: 1 from the genuine request and 20 from the replay. After the fix, it left 1. This was a manual replay check, not an automated regression guarantee. The result alone does not establish what happens if the winning request stalls or fails after claiming the temporary record. There is no automated race test yet.
+
+</Result>
+
+<figure>
+<Diagram label="Raffle-sale concurrency">
+<svg viewBox="0 0 760 290" role="img" aria-labelledby="raffle-title raffle-desc">
+<title id="raffle-title">Raffle sale concurrency, before and after</title>
+<desc id="raffle-desc">Before: concurrent webhooks both create a sale via a fixed delay, leaving 21 sales for one purchase. After: the temporary sale record is claimed by deleting it; the winner inserts, losers wait 2 seconds and look up the committed sale by order number, so no duplicate is created.</desc>
+<defs>
+<marker id="raffle-arrow-amber" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="var(--constraint)"></path></marker>
+<marker id="raffle-arrow-teal" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="var(--signal)"></path></marker>
+<marker id="raffle-arrow-muted" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="var(--muted-foreground)"></path></marker>
+</defs>
+
+<text x="0" y="12" fill="var(--muted-foreground)" fontFamily="var(--font-ibm-plex-mono), monospace" fontSize="10" fontWeight="500" letterSpacing="1.4">BEFORE</text>
+<rect x="0" y="34" width="140" height="40" fill="var(--panel)" stroke="var(--rule)" strokeWidth="1"></rect>
+<text x="70" y="59" textAnchor="middle" fill="var(--foreground)" fontFamily="var(--font-barlow), sans-serif" fontSize="12" fontWeight="600">Concurrent webhooks</text>
+<rect x="300" y="34" width="150" height="40" fill="var(--panel)" stroke="var(--rule)" strokeWidth="1"></rect>
+<text x="375" y="59" textAnchor="middle" fill="var(--foreground)" fontFamily="var(--font-barlow), sans-serif" fontSize="12" fontWeight="600">Fixed delay</text>
+<rect x="620" y="34" width="140" height="40" fill="var(--panel)" stroke="var(--rule)" strokeWidth="1"></rect>
+<text x="690" y="52" textAnchor="middle" fill="var(--constraint)" fontFamily="var(--font-ibm-plex-mono), monospace" fontSize="10" fontWeight="600">21 sales</text>
+<text x="690" y="65" textAnchor="middle" fill="var(--muted-foreground)" fontFamily="var(--font-ibm-plex-mono), monospace" fontSize="9">for 1 purchase</text>
+<path d="M140 54 H292" fill="none" stroke="var(--constraint)" strokeWidth="3.5" markerEnd="url(#raffle-arrow-amber)"></path>
+<path d="M450 54 H612" fill="none" stroke="var(--constraint)" strokeWidth="3.5" markerEnd="url(#raffle-arrow-amber)"></path>
+<text x="375" y="122" textAnchor="middle" fill="var(--muted-foreground)" fontFamily="var(--font-source-sans), sans-serif" fontSize="12">A fixed delay hid the race without deciding which request created the record.</text>
+
+<line x1="0" y1="150" x2="760" y2="150" stroke="var(--rule)" strokeWidth="1"></line>
+
+<text x="0" y="182" fill="var(--muted-foreground)" fontFamily="var(--font-ibm-plex-mono), monospace" fontSize="10" fontWeight="500" letterSpacing="1.4">AFTER</text>
+<rect x="0" y="204" width="140" height="40" fill="var(--panel)" stroke="var(--rule)" strokeWidth="1"></rect>
+<text x="70" y="222" textAnchor="middle" fill="var(--foreground)" fontFamily="var(--font-barlow), sans-serif" fontSize="12" fontWeight="600">Claim record</text>
+<text x="70" y="235" textAnchor="middle" fill="var(--muted-foreground)" fontFamily="var(--font-ibm-plex-mono), monospace" fontSize="9">delete + affected rows</text>
+<rect x="200" y="204" width="130" height="40" fill="var(--panel)" stroke="var(--rule)" strokeWidth="1"></rect>
+<text x="265" y="229" textAnchor="middle" fill="var(--signal)" fontFamily="var(--font-ibm-plex-mono), monospace" fontSize="10" fontWeight="600">winner → insert</text>
+<rect x="380" y="204" width="150" height="40" fill="var(--panel)" stroke="var(--rule)" strokeWidth="1"></rect>
+<text x="455" y="222" textAnchor="middle" fill="var(--muted-foreground)" fontFamily="var(--font-ibm-plex-mono), monospace" fontSize="10">loser → wait 2s</text>
+<text x="455" y="235" textAnchor="middle" fill="var(--muted-foreground)" fontFamily="var(--font-ibm-plex-mono), monospace" fontSize="9">lookup by order no.</text>
+<rect x="620" y="204" width="140" height="40" fill="var(--panel)" stroke="var(--rule)" strokeWidth="1"></rect>
+<text x="690" y="229" textAnchor="middle" fill="var(--signal)" fontFamily="var(--font-ibm-plex-mono), monospace" fontSize="10" fontWeight="600">1 sale</text>
+<path d="M140 224 H192" fill="none" stroke="var(--signal)" strokeWidth="3.5" markerEnd="url(#raffle-arrow-teal)"></path>
+<path d="M330 224 H372" fill="none" stroke="var(--muted-foreground)" strokeWidth="1.5" markerEnd="url(#raffle-arrow-muted)"></path>
+<path d="M530 224 H612" fill="none" stroke="var(--signal)" strokeWidth="3.5" markerEnd="url(#raffle-arrow-teal)"></path>
+<text x="0" y="272" fill="var(--muted-foreground)" fontFamily="var(--font-source-sans), sans-serif" fontSize="12">Deleting the staged record decides the winner, so exactly one request inserts the sale.</text>
+</svg>
+</Diagram>
+<figcaption>The wait survives the change, but only for losers reading back a sale that already exists.</figcaption>
+</figure>
+
+</Story>
+
+<Story capability="Data import" title="An import that failed once, then succeeded on retry">
+
+<Problem>
+
+Advanced PURLs give each supporter a personal campaign link with pre-filled amounts, generated in bulk from a CSV import. An import failed on the first attempt and succeeded on retry. Reproducing it from the recording on the ticket, I found the failure in parsing the template the admin interface itself provides: quoted fields broke the parser, and an empty value shifted the remaining columns into the wrong fields.
+
+</Problem>
+
+<Action>
+
+I rewrote the parsing to handle quoted fields and empty values, then ran other CSV samples through it to confirm they still parsed and that the duplicate-email check still held. I had added that check earlier: before insert, each row's email is compared with the campaign's existing records and with rows already read from the file, so a supporter is imported once per campaign even when an import runs again.
+
+I also made expiry and usage mode configurable settings, made expired PURLs load their page and form normally, and added search to the admin interface, which was unusable once an account held thousands of records.
+
+</Action>
+
+<Result>
+
+The downloaded template imports on the first attempt, and running an import again does not duplicate supporters already in the campaign. I merged and deployed the fix and checked that the reported failure no longer occurred. Expired links open a normal page, and administrators can find a record without paging through the whole set.
+
+</Result>
+
+<figure>
+  <Img src="/images/work/funraisin/purl-campaign.png" alt="Funraisin PURL campaign editor showing imported records with persistent usage, an expiry date and a selected event donation page" width="2880" height="1620" loading="lazy" />
+  <figcaption>A bulk PURL import in the campaign editor, with the usage, expiry, and destination-page controls around the generation workflow.</figcaption>
+</figure>
+
+</Story>
+
+<Story capability="Safe rollout" title="One feature, four template generations">
+
+<Problem>
+
+Intelligent Giving suggests donation amounts. The logic is small, but it had to reach every donation form: platform-level and event-level settings rendering correctly across all four template generations. Releasing everywhere at once would have changed donation-form behavior on every platform simultaneously.
+
+</Problem>
+
+<Action>
+
+I implemented the settings across that matrix and put the feature behind a beta switch so it could be enabled per platform instead of globally. Most of the follow-up work was configuration failing on one specific path. Defaults did not update, a preview did not reflect a change, and dollar handles (the preset donation-amount buttons) did not resolve when an event relied on platform defaults.
+
+</Action>
+
+<Result>
+
+Each platform could enable the feature independently. I verified that the disabled preview preserved its manually configured handles and that the enabled preview resolved Intelligent Giving defaults, and I fixed the reported fallback defects in the affected template paths.
+
+</Result>
+
+<figure>
+  <Img src="/images/work/funraisin/intelligent-giving.png" alt="Funraisin donation settings with Intelligent Giving active and personalised amounts previewed on the donation form" width="2880" height="1620" loading="lazy" />
+  <figcaption>Enabling Intelligent Giving replaces the manually configured handles with personalized defaults; switching it off restores the manual handles. In production, the data lake recalculates the recommendations daily; this preview verifies the configuration and rendering path.</figcaption>
+</figure>
+
+</Story>
+
+<Story capability="Integration debugging" title="A sync that could not see a change that had happened">
+
+<Problem>
+
+A client syncing to Salesforce found donations staying attached to the wrong campaign after a fundraiser was moved to a new team. Nothing errored, and the platform's own screens were correct.
+
+</Problem>
+
+<Action>
+
+Moving a fundraiser's donations updated the team reference on those records but did not touch their last-updated timestamp. The Salesforce sync uses that timestamp to decide what has changed, so from its side nothing had. Finding it meant reasoning about how change detection worked, not reading a stack trace.
+
+</Action>
+
+<Result>
+
+Updating the fundraiser's team now also updates the change signal consumed by the Salesforce synchronization path. The next sync can therefore pick up and reprocess the affected donations. I never watched a sync reprocess those donations. I confirmed that the timestamp gets updated, and the reprocessing follows from how the sync decides what has changed.
+
+</Result>
+
+</Story>
+
+## Other contributions
+
+<Contributions>
+
+<Contribution label="Initiative delivery">
+
+Worked 6 of the 8 tickets in the Third Party Event Management initiative, covering registration capacity limits, open and closed registration flows, final-submission entry limits, and QR codes for ticket check-in and check-out. Worked 5 of the 6 tickets in Designated Giving, covering the designation hierarchy, donor-side designation selection, donation-form configuration, and the backend for multi-split support; the remaining ticket was design work.
+
+</Contribution>
+
+<Contribution label="Payments and Stripe">
+
+Split payments stuck on a processing screen, incorrect tax on tickets bought from a dashboard, wallet buttons rendering regardless of platform settings, and a donation form returning a 500 on stale payment-intent references.
+
+</Contribution>
+
+<Contribution label="Ticketing">
+
+Ticket-holder records writing to one table but not its pair, period identifiers for accurate receipting, QR codes for check-in, and age validation against event or purchase date.
+
+</Contribution>
+
+<Contribution label="Globalization">
+
+Date-picker format handling across the platform and translation key coverage.
+
+</Contribution>
+
+<Contribution label="Regular giving upsell">
+
+Rolled the upsell across four page templates, including the settings, preview behavior, and iconography each template handled differently.
+
+</Contribution>
+
+</Contributions>
+
+## What they wrote about me
+
+The Funraisin AU team named me their Legend of the Month for November 2025. From the announcement, quoted as written:
+
+> Rizki's been performing well above expectations and actively demonstrates being better than yesterday, not just technically but in team culture and collaboration. He's proactive and challenges ideas constructively, making him a valuable voice in discussions.
+>
+> <cite>Funraisin pod team</cite>
+
+The same announcement recorded that Funraisin's Head of Engineering highlighted my delivery on the regular-giving upsell and my pull-request review for the pod.
+
+## Technical decisions
+
+CodeIgniter and jQuery would not be my choice for a new product, but replacing them was not the assigned problem. Years of fundraising rules sit in the existing code, so a change starts by tracing the current behavior and keeping the established defaults working.
+
+I have added a lock only where I could show the existing code taking money it should not have taken. A lock in a request path adds overhead on every request, so I have kept it at the payment boundary rather than applying it more widely.
+
+## Two changes I got wrong
+
+**A PHP 8 function on PHP 7.4 sites.** While building guest personalisation tags for ticket QR codes, I added a change to `funraisin_helper` that relied on a function only available from PHP 8. Some client sites still run PHP 7.4, and the helper broke on them. The change was taken back out; I re-applied it on a fresh branch from develop in a form that runs on both versions, and checked it on PHP 7.4 and PHP 8.3 before opening the pull request. Checking a change against the oldest PHP version a client still runs is now part of preparing a pull request.
+
+**A merge conflict I did not reread.** Another developer resolved a merge conflict on my branch, and I did not read the resolution closely. A bracket was left wrong, and test sites broke once they pulled the latest develop. It was caught before release. Since then I read every resolved conflict, mine or someone else's, before the branch moves on.
+
+This is an active assignment. Source and customer data are Funraisin's.

@@ -1,0 +1,126 @@
+---
+title: "e-PNBP Mobile"
+---
+
+<figure>
+  <Img src="/images/work/e-pnbp-mobile/overview.png" alt="e-PNBP web dashboard showing state revenue recapitulation charts" width="2880" height="1620" loading="lazy" />
+  <figcaption>The e-PNBP web platform, whose data and rules the mobile API also served.</figcaption>
+</figure>
+
+## System context
+
+e-PNBP managed non-tax state revenue workflows for telecommunications and postal-service operators in Indonesia. The Laravel web application covered self-assessment, bills, payments, receivables, correspondence, and coklit (*pencocokan dan penelitian*, or assessment and verification): comparing an operator's assessment with the government's findings.
+
+Reksa Karya engaged me as a freelancer from September 2019 to July 2020, concurrent with my employment at Java Multi Mandiri. My work crossed two repositories: a new Flutter staff application that replaced an earlier React Native client, and the mobile API inside the existing Laravel web platform.
+
+This was early in my career. I implemented substantial parts of the replacement client and extended the API it consumed, but I did not design the underlying e-PNBP domain or own the complete web platform.
+
+## My scope
+
+<Scope>
+
+<Owned>
+
+- Flutter client work across authentication, session restoration, dashboards, filters, coklit, correspondence, receivables, wajib-bayar (the party required to pay) records, and profile screens.
+- Laravel API changes for mobile authentication, telecom and postal payloads, charts, filters, notifications, and status representation.
+- Migration from one legacy API token per user to revocable Sanctum device tokens while retaining compatibility for older clients.
+
+</Owned>
+
+<Contributed>
+
+- Shared delivery of coklit and correspondence details, agreement participants, push notifications, receivable and wajib-bayar screens, and iterative mobile fixes with another engineer.
+- Stabilization of existing API controllers so mobile responses matched the web application's calculations and status rules.
+
+</Contributed>
+
+<TeamOwned>
+
+The core web application, revenue rules, original API, Bank Mandiri payment notifications, MEPos endpoints, scheduled processing, and broader product direction belonged to the existing team. The React Native source is not part of the available repositories, so this case focuses on the replacement Flutter client and the Laravel contracts it used.
+
+</TeamOwned>
+
+</Scope>
+
+## Key engineering work
+
+<Story capability="Mobile delivery" title="Replacing the React Native client with Flutter">
+
+<Problem>
+
+The team needed a replacement for the earlier React Native mobile application. The new client still had to cover staff workflows from the existing web system without reimplementing the revenue calculations on the device.
+
+</Problem>
+
+<Action>
+
+I implemented much of the initial Flutter client and continued through its early releases. The app authenticated Kominfo (Indonesia's communications ministry) staff, restored and verified persisted sessions, displayed dashboard charts, and provided filtered list-to-detail workflows for coklit, correspondence, notifications, receivables, and wajib-bayar organizations.
+
+The client used Provider for screen state, Firebase Messaging tokens for notifications, and API-backed search and filters for organization, year, billing category, and status. Correspondence screens could show validation state, download a PDF to device storage, open it locally, or hand a workflow back to the web application when mobile initiation was not available.
+
+</Action>
+
+<Result>
+
+The replacement Flutter client reached an "Initial release" and then `v1.0.1`, expanding staff access to receivables and wajib-bayar workflows. The delivered repository included Android and iOS targets and Android release-signing configuration.
+
+</Result>
+
+</Story>
+
+<Story capability="API contract" title="Two revenue workflows, one mobile API">
+
+<Problem>
+
+The mobile API initially reflected telecommunications assumptions. Postal obligations used KPLPU (a postal revenue category) data and needed different coklit, self-assessment, bill, receivable, and chart mappings from telecommunications BHP (a telecom regulatory fee) and USO (universal service obligation) records.
+
+</Problem>
+
+<Action>
+
+I updated both the Flutter presentation and the Laravel API to branch on the billing category instead of assuming one calculation shape. API responses selected the corresponding self-assessment and coklit relationships, compared the appropriate values, and mapped agreement states such as draft, waiting for confirmation, agreed, and disputed.
+
+I also corrected mobile status payloads to include the payment, penalty, document, correspondence, license, and permit context already used by the web application, so Flutter needed no version of those rules of its own.
+
+</Action>
+
+<Result>
+
+One mobile API surface represented both telecommunications and postal workflows while keeping their different calculations explicit. The Flutter client used the same billing-category distinction to render the corresponding labels, statuses, and detail views. I opened the same operator's postal records in the mobile client and in the web application and compared the figures; they matched. That put the postal mappings against the calculations already in production, not only against the code I had written.
+
+</Result>
+
+<figure>
+  <Img src="/images/work/e-pnbp-mobile/coklit-list.png" alt="Coklit assessment list comparing operator self-assessment against government findings per telecom operator" width="2880" height="1620" loading="lazy" />
+  <figcaption>Coklit list on the web platform, whose calculations the mobile API reproduced for telecom and postal records.</figcaption>
+</figure>
+
+</Story>
+
+<Story capability="Compatibility" title="Changing token storage without cutting off older clients">
+
+<Problem>
+
+The earlier API stored one bearer token directly on the user record. Moving to Laravel Sanctum introduced per-device tokens and explicit revocation, but older mobile clients still depended on the legacy bearer-token contract.
+
+</Problem>
+
+<Action>
+
+I added Sanctum token issuance during sign-in, attached user type and optional Firebase token metadata, and revoked the presented device token during sign-out. The authentication middleware first attempted Sanctum and then fell back to the legacy user token when necessary. Separate client flags selected Kominfo staff or wajib-bayar accounts.
+
+</Action>
+
+<Result>
+
+Newer clients received independently revocable device tokens, while clients still sending the previous bearer token continued through the legacy fallback. I signed in against the running API twice: once from the new client, once from an older build still sending the legacy bearer token. Both authenticated. The fallback let authentication migrate without requiring an immediate cutover of every installed client.
+
+</Result>
+
+</Story>
+
+## Technical decisions
+
+Domain calculations remained in Laravel. Flutter consumed API representations of balances, penalties, agreement state, correspondence access, and formatted values from the API, and none of those rules lived on the device. That kept the mobile application focused on staff access and presentation, although it also made the client sensitive to exact response keys and status labels.
+
+The app persisted authentication and profile data, not an offline copy of the e-PNBP domain. It depended on the API for current workflow state and used explicit expired-session, access-denied, and web-handoff behavior when a mobile action could not continue.

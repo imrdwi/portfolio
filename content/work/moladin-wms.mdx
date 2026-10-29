@@ -1,0 +1,164 @@
+---
+title: "Moladin Warehouse Management"
+---
+
+## System context
+
+Moladin buys and sells used cars in Indonesia. Cars move between warehouses, while each car's BPKB ownership certificate can move separately. The warehouse service therefore tracked the custody and status of both items across check-in, check-out, borrowing, sales, and interwarehouse transfers.
+
+An interwarehouse transfer included human delays as part of the workflow: an agent requested a destination, a manager or mapped coordinator responded, and after approval the car or BPKB still had to arrive. A request could stall before approval while waiting on the manager, or after approval while waiting on the agent to bring the item.
+
+This was a two-month SoftwareSeni assignment, August to September 2022, as a Backend Engineer inside an existing TypeScript, Node.js, Express, Sequelize, and MySQL service. It focused on extending and hardening the interwarehouse check-in and check-out flow used by mobile clients.
+
+## My scope
+
+<Scope>
+
+<Owned>
+
+- The post-approval reservation deadline and separate expiry handling for pending requests and approved arrivals.
+- Scheduled cancellation behavior, inventory logs and snapshots, reason-specific notifications, and configurable timeout windows.
+- The Sunday-aware deadline helper used by borrow and regular-buyout paths.
+- Warehouse-scoped authorization, delegated approval behavior, and manager-listing endpoints.
+- API capability flags for interwarehouse check-in and user-specific check-out actions.
+
+</Owned>
+
+<Contributed>
+
+- Defect work around warehouse filtering, pagination, and inventory-location responses.
+- Changes around the existing request, inventory, notification, and custody-history models.
+
+</Contributed>
+
+<TeamOwned>
+
+The warehouse platform, interwarehouse schema, original request deadline, delegation tables, architecture, and product priorities predated my assignment or remained team-owned. I implemented assigned changes inside that existing workflow and handed them over when the assignment ended.
+
+</TeamOwned>
+
+</Scope>
+
+## Key engineering work
+
+<Story capability="Workflow modeling" title="A transfer can stall in two different places">
+
+<Problem>
+
+An existing request deadline covered the time waiting for a warehouse response. Approval introduced a second failure mode: the destination had accepted the request, but the agent might never bring the car or BPKB to the warehouse. Treating both as one timeout would not identify which stage had stalled.
+
+</Problem>
+
+<Action>
+
+I extended the flow with a separate reservation deadline set when a request was approved. Repository queries distinguished expired pending requests from expired approved reservations, and separate scheduled services swept both groups every five minutes when cron processing was enabled.
+
+Each cancellation wrote its own reject reason and remark, updated the approval state, created a detailed inventory log, and saved an inventory-history snapshot. Request and reservation windows were configured independently in hours through environment variables.
+
+</Action>
+
+<Result>
+
+Separate scheduled services closed both stale states automatically and recorded whether the manager-response window or the post-approval arrival window had expired. The reason was recorded in approval and inventory history.
+
+</Result>
+
+</Story>
+
+<Story capability="Domain modeling" title="A custody deadline could land on a Sunday">
+
+<Problem>
+
+Borrow and regular-buyout paths calculated future custody deadlines. Adding calendar days could place a deadline on Sunday, when the warehouse was closed.
+
+</Problem>
+
+<Action>
+
+I added a shared helper that takes a start date, number of days, end-of-day behavior, and timezone. It calculates the result in the configured timezone and moves a Sunday result to Monday. Borrow and regular-buyout deadline paths both used the helper.
+
+</Action>
+
+<Result>
+
+Those paths no longer returned a Sunday deadline, and the Sunday rule lived in one function. We checked the borrow and buyout paths by hand, feeding in start dates whose computed deadline landed on a Sunday and watching each one move to Monday. QA ran those checks with me. No regression test pins the rule down, so it is confirmed only for the cases we walked through. The helper did not model public holidays, which remained a separate unimplemented requirement.
+
+</Result>
+
+</Story>
+
+<Story capability="Authorization" title="Scoping physical actions and delegated approvals differently">
+
+<Problem>
+
+A role did not establish authority over every warehouse. Physical check-in and check-out needed to be limited to administrators or staff related to the warehouse holding or receiving the item. Approval had a narrower delegation rule: a mapped warehouse coordinator could respond when the assigned destination manager was unavailable.
+
+</Problem>
+
+<Action>
+
+I adjusted the service checks around those relationships. Physical check-in and check-out verified the actor's warehouse association and explicitly excluded coordinators from performing those actions. The approval path accepted either the assigned manager or a coordinator mapped to the destination warehouse, while preventing an inactive manager from approving directly.
+
+I also added manager and area-control-manager listing endpoints with role checks in the service layer instead of relying on the caller to filter unauthorized results.
+
+</Action>
+
+<Result>
+
+Physical custody actions remained tied to the relevant warehouse, while delegated coordinators could handle the approval step without gaining check-in or check-out authority. QA and I walked the scenario on the development environment: checking in as an administrator, then as related staff, then confirming that a coordinator was refused the same action while still able to approve.
+
+</Result>
+
+</Story>
+
+<Story capability="API design" title="Letting the backend decide which actions the mobile app may offer">
+
+<Problem>
+
+Whether the mobile app should offer a car, BPKB, or combined interwarehouse request depended on inventory state. Check-out depended on additional facts: the user's role and warehouse relationship, physical location, sale state, and approved borrowing state.
+
+</Problem>
+
+<Action>
+
+I returned those decisions as explicit capability flags in the inventory API. The interwarehouse create path enforced the same car, BPKB, and combined-request flags, so the response was not only presentation guidance. User-specific check-out flags applied the authorization and inventory conditions on the backend as well.
+
+</Action>
+
+<Result>
+
+Mobile clients could render the actions returned by the backend, while requests were still validated against the same rules when submitted.
+
+</Result>
+
+</Story>
+
+## Other contributions
+
+<Contributions>
+
+<Contribution label="Notifications">
+
+Pending-request reminders and cancellations used reason-specific messages. Reservation expiry notified the destination manager, origin manager, and agent over WhatsApp and also sent a push notification to the agent.
+
+</Contribution>
+
+<Contribution label="Defect work">
+
+Worked on pagination counting from the wrong collection, warehouse filtering that only matched one warehouse, and a sold-then-checked-out car returning the wrong warehouse because the lookup considered the request without the current inventory record.
+
+</Contribution>
+
+<Contribution label="Handover">
+
+Handed the work to a replacement developer at the end of the assignment, including access setup, staging databases, and the interwarehouse workflow behavior.
+
+</Contribution>
+
+</Contributions>
+
+## Technical decisions
+
+The service already existed in TypeScript, Node.js, Express, and Sequelize, and the assignment ran for two months, so the work extended the existing structure. When a fix would have meant adding properties to the backend response, I raised the performance cost of doing that on every request and asked for the change to be made in the CRM, where the logic it depended on already lived. Moving a fix to the system that owns the rule keeps the cost with the code that caused it.
+
+Cancellations were not one state. A request canceled by a user and a request canceled by the system needed different downstream handling, so the check-in generation skips only the user-canceled ones, identified by an empty rejection reason, instead of skipping every canceled request. Treating them alike would have been less code and would have silently dropped records the warehouse still needed to account for.

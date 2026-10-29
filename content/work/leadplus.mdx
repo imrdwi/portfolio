@@ -1,0 +1,291 @@
+---
+title: "Agentpoint Leadplus"
+---
+
+<figure>
+  <Img src="/images/work/leadplus/overview.png" alt="Realty+ dashboard showing total listings, agents, and contacts count with a recent listings table" width="2880" height="1620" loading="lazy" />
+  <figcaption>Realty+ (core Leadplus service) dashboard overview.</figcaption>
+</figure>
+
+## System context
+
+Leadplus reconciles listings, agents, and contacts from seven CRM providers across Australia and the UK into one canonical record model, then serves that model to eight downstream products: MyAgencyPlatform (MAP), Agentbox Proposals, RP Proposals, Content+, Events, Customer Engagement Tools (CET), Autoresponder, and Digital Property Reports (DPR).
+
+The providers are Agentbox, PropertyHUB, Reapit, Rex, VaultRE, Console, and RateMyAgent. Listings also move in and out as REAXML, the Australian real-estate industry's XML exchange format. Each provider differs in field shape, identity, rate limit, and webhook behavior. Some have no stable identifier, some do not send a webhook at all, and some fail without returning an error.
+
+Reapit is both one of those providers and, since acquiring Agentpoint, the owner of the platform itself.
+
+Downstream products cannot absorb that variation. They need one model with a predictable shape, and they need to keep working when a provider does not. The work below sits in that gap.
+
+From October 2022 to May 2025 I worked on Leadplus as a SoftwareSeni assignment, as a Backend Engineer across the Accounts, Attachment, Events, and Realty services. The work covered Laravel, MongoDB, GraphQL, adapters, queues, and React when a change crossed the API boundary.
+
+During the assignment I could query records through GraphQL and read error rates in Datadog, and I used both to check fixes before and after release. That access ended with the assignment and the figures are Reapit's, so the stories report what I observed and leave production numbers out.
+
+## My scope
+
+I led solution-design planning for the areas below, including the Realty+ adapter work and the Attachment Service's direct-to-R2 flow, and stayed involved through implementation, review, and release. Other engineers reviewed those designs before implementation, so my part was setting technical direction as well as making hands-on changes.
+
+<Scope>
+
+<Owned>
+
+- Reliability across provider adapters: throttling, backoff, health checks, self-healing, and test coverage.
+- Planning and compatibility work for the Laravel and PHP upgrades across the services I touched.
+- Agent deduplication and identity resolution across providers.
+- The REAXML import pipeline.
+- Planning and delivery for the direct-to-R2 attachment flow.
+- Removal of an unused geocode path, including post-release verification.
+
+</Owned>
+
+<Contributed>
+
+- Shared normalization, caching, conditional requests, and client-library changes.
+- The RateMyAgent identifier integration.
+- React work on the consuming products where a change spanned the API and the interface.
+
+</Contributed>
+
+<TeamOwned>
+
+The platform predates me. Core architecture, product direction, and release policy remained team decisions. Changes in my assigned areas were reviewed and released with the wider team.
+
+</TeamOwned>
+
+</Scope>
+
+## Key engineering work
+
+<Story capability="Fault isolation" title="Making one broken provider stop breaking the platform">
+
+<Problem>
+
+A failure at one provider did not stay contained to that provider. Rate-limit rejections arrived as a large volume of errors, a persistently broken upstream kept being retried at full rate, and a failed account lookup could delete an adapter outright. Long syncs ran in the request path and blocked it.
+
+</Problem>
+
+<Action>
+
+I worked through the adapter layer so each provider owns its own failure behavior: rate-limit throttling shaped by the provider's published limits, backoff when an adapter or webhook job hits repeated errors, and health checks covering adapter status, provider capability availability, and webhook subscription integrity. Adapter processing moved onto the Redis-backed queue behind Horizon, so long syncs stopped running in the request path. I also stopped disabled adapters from running at all, and stopped an unrelated lookup failure from deleting one.
+
+</Action>
+
+<Result>
+
+Over the days after the throttling and backoff rollout I watched Datadog: error volume dropped, and what remained stayed with the failing provider. That is an aggregate pattern across many requests. I cannot point to one incident and say it was contained. The health checks repair some conditions without a developer, and I wrote the tests asserting that they repair an invalid webhook signature, skip when webhook capability is false, and log failed attempts.
+
+</Result>
+
+</Story>
+
+<Story capability="Production debugging" title="Webhooks that were never validated, and never complained">
+
+<Problem>
+
+Clients reported that Agentbox listings were not reaching the platform and that automated responses fired late or not at all. No error was raised and no job failed; the webhooks were not being processed at all.
+
+</Problem>
+
+<Action>
+
+I traced individual accounts through the GraphQL playground and found adapters registered with an **empty webhook signature**. With no signature the payload could not be validated, so it was dropped without a trace. Refreshing it fixed each affected client, but only the symptom. The signature was retrieved only during webhook registration, so a failed fetch left the completed registration holding a blank value with no later recovery attempt. I then added a self-healing check during normal adapter runs: when the locally stored signature is empty, retrieve it again so the adapter can recover on a later synchronization. Separately, when the provider deprecated its old signature scheme, I implemented validation against the new method.
+
+</Action>
+
+<Result>
+
+I traced affected accounts to empty webhook signatures and restored processing by refreshing them. I also implemented the provider's new signature-validation method and shipped the self-healing check that retrieves the signature again during later adapter runs whenever the stored value is empty, so an adapter left in that state recovers on its own.
+
+</Result>
+
+</Story>
+
+<Story capability="Concurrency" title="Two jobs processing the same listing's images">
+
+<Problem>
+
+Listing images were intermittently wrong or missing. Two jobs could process images for the same listing concurrently: both would look the listing up and create it if missing (Laravel's `firstOrCreate`, which checks and inserts as two separate steps), and both would write.
+
+</Problem>
+
+<Action>
+
+I led the concurrency fix across the image-processing path. The design combined an atomic application lock, verification that expected images still existed, retry behavior when they did not, and pessimistic row locks around listing and image queries.
+
+</Action>
+
+<Result>
+
+Duplicate concurrent processing of the same listing stopped. I added logging inside the job-overlap middleware recording each lock acquisition and each contention, then read those logs after release to confirm the race had actually stopped rather than merely become rarer.
+
+</Result>
+
+</Story>
+
+<Story capability="Architecture" title="Attachment bytes traveled through the application servers">
+
+<Problem>
+
+Attachments were proxied through application servers, which made file transfer the application's problem: request duration, memory use, and failure handling all scaled with file size.
+
+Large syncs exposed it. Every listing image became a job on the Attachment service's queue, which worked through it a small batch at a time, and a job that waited past its lifetime was dropped. Listings came out of a big sync with images missing.
+
+</Problem>
+
+<Action>
+
+I led much of the planning and implemented the application-side flow around an existing Cloudflare Worker. The Attachment service authorizes an upload, the Worker returns a signed R2 URL, and the client uploads directly while our services retain metadata. I wired the path into GraphQL, added upload verification and chunked cleanup of expired URLs, and added deployment jobs for development, staging, Australian production, and UK production.
+
+</Action>
+
+<Result>
+
+Attachment payloads no longer travel through application servers. Authorization, verification, and cleanup remain inside the platform while R2 handles the file transfer.
+
+</Result>
+
+<figure>
+<Diagram label="Direct-to-R2 attachment uploads">
+<svg viewBox="0 0 760 420" role="img" aria-labelledby="r2-title r2-desc">
+<title id="r2-title">Attachment upload path, before and after the direct-to-R2 change</title>
+<desc id="r2-desc">Before: file bytes travel from the client through the application servers and on to object storage, so request duration, memory use, and failure handling all scale with file size. After: the client asks the Attachment service to authorize an upload, a Cloudflare Worker returns a signed URL, and the client sends the file bytes straight to Cloudflare R2 without passing through the application servers.</desc>
+<defs>
+<marker id="r2-arrow-amber" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="var(--constraint)"></path></marker>
+<marker id="r2-arrow-teal" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="var(--signal)"></path></marker>
+<marker id="r2-arrow-muted" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0 L10 5 L0 10 z" fill="var(--muted-foreground)"></path></marker>
+</defs>
+
+<text x="0" y="12" fill="var(--muted-foreground)" fontFamily="var(--font-ibm-plex-mono), monospace" fontSize="10" fontWeight="500" letterSpacing="1.4">BEFORE</text>
+<rect x="0" y="34" width="150" height="56" fill="var(--panel)" stroke="var(--rule)" strokeWidth="1"></rect>
+<text x="75" y="67" textAnchor="middle" fill="var(--foreground)" fontFamily="var(--font-barlow), sans-serif" fontSize="14" fontWeight="600">Client</text>
+<rect x="290" y="34" width="190" height="56" fill="var(--panel)" stroke="var(--rule)" strokeWidth="1"></rect>
+<text x="385" y="67" textAnchor="middle" fill="var(--foreground)" fontFamily="var(--font-barlow), sans-serif" fontSize="14" fontWeight="600">Application servers</text>
+<rect x="620" y="34" width="140" height="56" fill="var(--panel)" stroke="var(--rule)" strokeWidth="1"></rect>
+<text x="690" y="67" textAnchor="middle" fill="var(--foreground)" fontFamily="var(--font-barlow), sans-serif" fontSize="14" fontWeight="600">Object storage</text>
+<path d="M150 62 H282" fill="none" stroke="var(--constraint)" strokeWidth="4" markerEnd="url(#r2-arrow-amber)"></path>
+<text x="216" y="52" textAnchor="middle" fill="var(--constraint)" fontFamily="var(--font-ibm-plex-mono), monospace" fontSize="10" fontWeight="500" letterSpacing="0.5">file bytes</text>
+<path d="M480 62 H612" fill="none" stroke="var(--constraint)" strokeWidth="4" markerEnd="url(#r2-arrow-amber)"></path>
+<text x="546" y="52" textAnchor="middle" fill="var(--constraint)" fontFamily="var(--font-ibm-plex-mono), monospace" fontSize="10" fontWeight="500" letterSpacing="0.5">file bytes</text>
+<text x="385" y="114" textAnchor="middle" fill="var(--muted-foreground)" fontFamily="var(--font-source-sans), sans-serif" fontSize="12">Request duration, memory use, and failure handling all scale with file size.</text>
+
+<line x1="0" y1="146" x2="760" y2="146" stroke="var(--rule)" strokeWidth="1"></line>
+
+<text x="0" y="178" fill="var(--muted-foreground)" fontFamily="var(--font-ibm-plex-mono), monospace" fontSize="10" fontWeight="500" letterSpacing="1.4">AFTER</text>
+<rect x="250" y="200" width="180" height="48" fill="var(--panel)" stroke="var(--rule)" strokeWidth="1"></rect>
+<text x="340" y="229" textAnchor="middle" fill="var(--foreground)" fontFamily="var(--font-barlow), sans-serif" fontSize="14" fontWeight="600">Attachment service</text>
+<rect x="500" y="200" width="180" height="48" fill="var(--panel)" stroke="var(--rule)" strokeWidth="1"></rect>
+<text x="590" y="229" textAnchor="middle" fill="var(--foreground)" fontFamily="var(--font-barlow), sans-serif" fontSize="14" fontWeight="600">Cloudflare Worker</text>
+<rect x="0" y="254" width="150" height="56" fill="var(--panel)" stroke="var(--rule)" strokeWidth="1"></rect>
+<text x="75" y="287" textAnchor="middle" fill="var(--foreground)" fontFamily="var(--font-barlow), sans-serif" fontSize="14" fontWeight="600">Client</text>
+<rect x="500" y="338" width="180" height="48" fill="var(--panel)" stroke="var(--rule)" strokeWidth="1"></rect>
+<text x="590" y="367" textAnchor="middle" fill="var(--foreground)" fontFamily="var(--font-barlow), sans-serif" fontSize="14" fontWeight="600">Cloudflare R2</text>
+
+<path d="M150 270 H200 V224 H242" fill="none" stroke="var(--muted-foreground)" strokeWidth="1.5" markerEnd="url(#r2-arrow-muted)"></path>
+<text x="206" y="252" fill="var(--muted-foreground)" fontFamily="var(--font-ibm-plex-mono), monospace" fontSize="10" fontWeight="500" letterSpacing="0.5">authorize</text>
+<path d="M430 224 H492" fill="none" stroke="var(--muted-foreground)" strokeWidth="1.5" markerEnd="url(#r2-arrow-muted)"></path>
+<text x="461" y="214" textAnchor="middle" fill="var(--muted-foreground)" fontFamily="var(--font-ibm-plex-mono), monospace" fontSize="10" fontWeight="500" letterSpacing="0.5">signed URL</text>
+<path d="M590 248 V338" fill="none" stroke="var(--rule)" strokeWidth="1.5" strokeDasharray="4 4"></path>
+<text x="600" y="296" fill="var(--muted-foreground)" fontFamily="var(--font-ibm-plex-mono), monospace" fontSize="10" fontWeight="500" letterSpacing="0.5">signs for</text>
+
+<path d="M150 294 H200 V362 H492" fill="none" stroke="var(--signal)" strokeWidth="4" markerEnd="url(#r2-arrow-teal)"></path>
+<text x="346" y="352" textAnchor="middle" fill="var(--signal)" fontFamily="var(--font-ibm-plex-mono), monospace" fontSize="10" fontWeight="500" letterSpacing="0.5">file bytes</text>
+
+<text x="0" y="404" fill="var(--muted-foreground)" fontFamily="var(--font-source-sans), sans-serif" fontSize="12">Authorization, verification, and cleanup stay in the platform. The file bytes no longer pass through it.</text>
+</svg>
+</Diagram>
+<figcaption>Only the file transfer moves. Authorization, verification, and cleanup keep the same owners on either side of the change.</figcaption>
+</figure>
+
+</Story>
+
+## Other contributions
+
+<Contributions>
+
+<Contribution label="Agent identity">
+
+Unified every adapter onto one agent-matching function, removed email from the existing-agent check after it proved non-unique, and implemented composite keys so one record can carry several provider identities.
+
+</Contribution>
+
+<Contribution label="Deferred image processing">
+
+Every listing image went through Cloudflare Images as soon as it arrived, and that processing had a cost. Building on a colleague's existing merge request, I finished the Realty+ side of deferred attachments: the adapter decides per attachment whether the Attachment Service should defer it, with floorplans and images after the first deferred by default. I added `AdapterTest` cases for that decision and checked on development that Reapit property-image webhooks deferred the right attachments. The aim was lower processing cost; I do not have the before-and-after figure.
+
+</Contribution>
+
+<Contribution label="REAXML import and export">
+
+The industry XML exchange format, end to end: reading and validating files from S3, creating listings and agents, archiving processed files, and export with a parallel queue for large jobs.
+
+</Contribution>
+
+<Contribution label="Removing unused traffic">
+
+I helped plan the geocode cleanup and removed an unused path that looked up G-NAF (Australia's national address dataset) through PropertyHUB's map API. I verified that address resolution still worked and checked production logs after release.
+
+</Contribution>
+
+<Contribution label="Support self-service">
+
+Fixed the admin interface so non-developers could troubleshoot data issues, and gave users the ability to force a listing sync themselves, which had previously needed a ticket for an engineer.
+
+</Contribution>
+
+<Contribution label="Legacy modernization">
+
+Helped plan the Laravel and PHP upgrades, then implemented compatibility fixes across the services I worked in. I also cleared the PHPStan and PHPUnit issues the upgrades raised.
+
+</Contribution>
+
+<Contribution label="Testing">
+
+Wrote and maintained PHPUnit tests as part of normal ticket work: the provider adapters (`AgentboxTest`, `ReapitTest`, `ConsoleTest`, `ReaxmlTest`), GraphQL mutations such as `GraphqlUpsertAgentTest`, and the sync and dedupe commands (`AgentSyncTest`, `ListingSyncTest`, `AgentsDedupeTest`). Tests ran against mocked CRM objects and a mocked GraphQL response, so none reached a live provider API, and the repository pipeline required the tests and PHPStan to pass before a merge request went in. One case asserts that `agentFirstOrCreate` does not create a duplicate agent when the same agent arrives from a different CRM. For the dedupe command, I also ran it locally against a copy of production agent data to see how long it would run and how many records it would change.
+
+</Contribution>
+
+<Contribution label="Release work">
+
+Cut production releases and monitored Datadog after deploys involving my changes.
+
+</Contribution>
+
+<Contribution label="Cross-team support">
+
+Explained root causes and their consequences to engineers on the consuming products, including why a proposed change to the Console sync would reach Realty+ and where a formatted-price requirement conflicted with earlier feedback. Helped the Accounts+ team trace an integration defect where agents were not being associated with their account code, and joined the investigation into a login failure on the shared playground environment. Took part in the Realty+ knowledge-sharing sessions.
+
+</Contribution>
+
+</Contributions>
+
+Outside the roadmap, I built part of a Single Contact View app in Laravel, Livewire, and Tailwind for an internal hackathon, pulling two provider APIs behind one cached service interface.
+
+## What they wrote about me
+
+From monthly review notes written by my lead during the assignment, quoted as written.
+
+> Nice work on implementing the deferred attachment in R+ and enhancing the data sync and adapter. These kinds of improvements show your understanding of how the system works behind the scenes.
+>
+> <cite>Tech Lead</cite>
+
+> Great job enhancing the agents dedupe command. Optimizing the query and adding the by fullname flag improves both performance and flexibility.
+>
+> <cite>Tech Lead</cite>
+
+> Adding the HealthCheck skeleton and the Agentbox Webhook HealthCheck is also a great step toward improving system observability and reliability.
+>
+> <cite>Tech Lead</cite>
+
+## Technical decisions
+
+MongoDB fit the source records because provider payloads carry optional fields and nested structures that vary per provider and change without notice. A relational schema at that boundary would have meant a migration every time a provider adjusted a response.
+
+GraphQL gave all eight downstream products one interface over the shared model, and a generated client library kept them in step. That library then has to be deployed and supported like any other service, and I spent time on cache-key and versioning defects inside it.
+
+Workers and R2 suited the attachment problem specifically, because upload authorization is small and stateless enough to run at the edge and the file bytes never need to reach our servers. The same reasoning does not carry to the rest of the platform, which needs the application context.
+
+## What the failures had in common
+
+None of the failures above raised an error. An empty webhook signature, a lookup nobody read, and two jobs writing the same listing all looked healthy from the outside, and each was traced from a client-reported symptom back through an adapter. That is why the health checks log their failed attempts as well as retrying, and why I read the lock-contention logs after the image-concurrency release.
+
+The product is at [leadplus.com.au](https://leadplus.com.au/) and the application is login-gated; source, tenant data, and dashboards are Reapit's.

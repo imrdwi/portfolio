@@ -1,0 +1,165 @@
+---
+title: "MyChatLab"
+---
+
+## System context
+
+MyChatLab, built for Fun Gum in Auckland, was a gamified English-learning product for children. It was renamed twice while I worked on it, so it also appears as Chit Chat and Lexo Lab. It sold two ways: to parents by subscription, and to schools through teacher accounts. Children learned under a parent or a teacher, and did not hold their own billing relationship.
+
+Subscription state therefore drove most of the product. It decided what a child could open, what a teacher could see across a class, when a trial ended, and which currency and language a person was billed and emailed in. Three payment providers wrote into it: Stripe for cards and subscriptions, Midtrans for Indonesian payments, and WooCommerce for the storefront.
+
+The other constraint was where the two halves ran. The backend ran on an Indonesian server, and the MySQL database was an Amazon RDS (managed database) instance in Australia.
+
+MyChatLab was my first SoftwareSeni assignment, from August 2021 to February 2022, as a Full-stack Engineer. The backend and CMS used Laravel and MySQL 8, and I worked on the React student app when a change spanned both the API and the interface.
+
+## My scope
+
+<Scope>
+
+<Owned>
+
+- The subscription lifecycle across Stripe, Midtrans, and WooCommerce, including trials, expiry, and cancellation.
+- The localized transactional email system.
+- Production error monitoring and the investigations that came out of it.
+- Diagnosing conflicting metric definitions between the reports and the app.
+
+</Owned>
+
+<Contributed>
+
+- The database indexing and foreign-key pass, and query optimization in the subscription loading paths.
+- The Asana content import, and the WooCommerce and Midtrans payment endpoint.
+
+</Contributed>
+
+<TeamOwned>
+
+An established product with an existing team, and I was the junior engineer on it. Tickets came from a project manager, everything went through merge review, and I raised the issues I found for the team to pick up.
+
+</TeamOwned>
+
+</Scope>
+
+## Key engineering work
+
+<Story capability="Production debugging" title="The same script, two servers, minutes apart">
+
+<Problem>
+
+Skipping a lesson was taking two to four minutes in production. From the application code there was nothing obviously wrong, and the operation was not doing an unreasonable amount of work. Reports of slow page loads had been accumulating for a while without a cause.
+
+</Problem>
+
+<Action>
+
+I stopped reading the code and ran the same script on two servers. From the Indonesian backend it took two to four minutes. From an Australian server it took under a minute. The application path was the same in both runs. So the comparison pointed to the network path to the RDS instance in Australia, with the latency cost paid per query, not once per request.
+
+</Action>
+
+<Result>
+
+A vague performance complaint became a specific, located cause: cross-region latency between the application server and the database, amplified by query count. That moved the fix from optimizing the lesson-skip code to reducing round trips and reconsidering where the two halves run. I reported the two-server comparison on the project channel so the hosting decision remained with the people who could make it.
+
+</Result>
+
+</Story>
+
+<Story capability="Payments and state modeling" title="One subscription state, three providers writing to it">
+
+<Problem>
+
+Three providers meant three webhook shapes and three notions of what a completed payment is, all landing in one `user_subscriptions` record. Status had grown into a set of strings covering trial, monthly, and one-off purchases per provider. A new signup was writing plain "Paid" where it should have written the more specific monthly status, so downstream checks read the wrong thing.
+
+</Problem>
+
+<Action>
+
+I worked through the lifecycle end to end: separate statuses for one-off Stripe and one-off Midtrans payments, an aggregate filter for every paying user, trial and expired filters for the admin list, a computed remaining-days field that goes negative once expiry has passed, coupon codes recorded against the payment, and cancellation from the parent record. Children inherit subscription state from whichever parent or teacher owns them, so a class does not need per-child billing.
+
+</Action>
+
+<Result>
+
+Administrators could filter paying, trial, and expired accounts from one subscription model, while children inherited access from the parent or teacher who owned the billing relationship. To confirm the signup fix I ran a real checkout through to completion, then read the `user_subscriptions` row it produced. The defect was in what got written, so the status the interface displayed would not have told me anything. When duplicated email data broke payment lookups after an address change, I traced the drift to the subscriptions table and made profile updates propagate to it. Whether a parent could cancel was still decided by checking if the subscription status contained the word "paid", a workaround the existing status model left in place.
+
+</Result>
+
+</Story>
+
+<Story capability="Data correctness" title="Two screens counting the same thing differently">
+
+<Problem>
+
+The reports and the in-app statistics disagreed consistently, and not by a rounding error. Neither was throwing an error, and both were reading the same database.
+
+</Problem>
+
+<Action>
+
+I traced both queries for each disputed number. Login count: the reports counted login records *and* session records; the stats page counted only login records. Word vault count: the reports counted two categories of completed task; the app counted one. Completed and remaining lessons disagreed for the same reason. Neither query had a defect; each one counted a different set of records under the same label.
+
+</Action>
+
+<Result>
+
+I documented the definition behind each metric and reported the finding in the project channel. Comparing the underlying record categories showed that the defect was definition drift and not a broken query. The assignment ended before anyone reconciled those queries, so what came out of this was a diagnosis on record and not a shipped fix.
+
+</Result>
+
+</Story>
+
+## Other contributions
+
+<Contributions>
+
+<Contribution label="Localized email">
+
+Built transactional email on translatable text with placeholders, with header images and a trial user's subscription currency following their account language.
+
+</Contribution>
+
+<Contribution label="Indexing pass">
+
+Added indexes and foreign keys across existing tables, measured the effect of each on query load, listed every index in a shared document, and dropped some again on production where they did not earn their write cost.
+
+</Contribution>
+
+<Contribution label="A half-run migration">
+
+Migrations were not running on production, and were not failing with an error either. Server logs showed one had run partway and stopped on a column that did not exist there, leaving the schema between two states. I re-ran the remaining files together with DevOps.
+
+</Contribution>
+
+<Contribution label="Export path">
+
+Stats export returning a 500, exports hanging on a loading screen, and a type error in the table export plugin. Implemented export on the users table with selectable columns.
+
+</Contribution>
+
+<Contribution label="Content pipeline">
+
+Lessons and books were authored in Asana and imported. I ran the imports into dev and staging, and traced cases where production lessons had not imported their books.
+
+</Contribution>
+
+<Contribution label="Scoring">
+
+Added the points table and wrote the MySQL queries computing user and platform-wide totals, and derived a pretest score from breakdown data already stored as JSON.
+
+</Contribution>
+
+<Contribution label="Family accounts">
+
+Made the parent username nullable across signup and trial signup, and fell back to the parent email when a child has no username.
+
+</Contribution>
+
+</Contributions>
+
+## Technical decisions
+
+Computing scores by querying inside JSON columns was a compromise. It avoided a migration and a backfill on data already stored that way, at the cost of index usage on every read. It met the deadline, but it is not what I would design from scratch.
+
+The slow queries could have been addressed by rewriting them or by adding indexes. I proposed the rewrite and measured it: the same path that took ~20 seconds dropped to ~3 seconds on my run. Residual cost remained because the application server was in Indonesia and the MySQL RDS instance in Australia, so per-query latency still accumulated. I raised the comparison on the ticket; the team preferred indexes, so that is what I implemented. Each index was then checked against query load, and the ones whose write cost was not earning anything back were dropped from production.
+
+The two-to-four-minute figure is my own measurement from running the same script on two servers, not a published benchmark.
