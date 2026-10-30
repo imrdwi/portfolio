@@ -14,6 +14,8 @@ export type Experience = {
   relationship: "Employment" | "Freelance" | "Venture";
   functionalScope: string;
   summary: string;
+  /** A public from-scratch rebuild of this work. Not the client's code. */
+  rebuild?: { label: string; href: string };
   assignments?: Assignment[];
 };
 
@@ -78,6 +80,15 @@ export const experiences: Experience[] = [
       "Concurrent freelance work alongside SoftwareSeni employment. Connected verified Midtrans payments to enrollment and invoicing, and integrated application-side SSO and CoursePlayer provisioning across the Vue V0 and Laravel-rendered V1 applications.",
   },
   {
+    organization: "UPS maintenance reporting (private client)",
+    period: "Aug 2021 - Sep 2021",
+    relationship: "Freelance",
+    functionalScope: "Full-stack Engineer",
+    summary:
+      "Short freelance build at the start of my SoftwareSeni role. Rewrote a UPS maintenance reporting system in Laravel, with quarterly reports per branch, editable reports, an LDAP name lookup, and live status read from each UPS's web interface over the client's network.",
+    rebuild: { label: "github.com/imrdwi/ups-monitor", href: "https://github.com/imrdwi/ups-monitor" },
+  },
+  {
     organization: "Java Multi Mandiri",
     period: "Jul 2019 - Jul 2021",
     relationship: "Employment",
@@ -100,6 +111,14 @@ export const experiences: Experience[] = [
         slug: "es3-kula",
       },
     ],
+  },
+  {
+    organization: "PT Ciberindo Makmur Sejahtera",
+    period: "Dec 2019 - Jan 2020",
+    relationship: "Freelance",
+    functionalScope: "Backend Engineer",
+    summary:
+      "Concurrent freelance work alongside Java Multi Mandiri employment. Connected the Epayindo payment wallet to the Winpay gateway with logged, forward-to-merchant notifications, and built the RumahPro marketplace checkout on the Epayindo API with WhatsApp payment links.",
   },
   {
     organization: "Reksa Karya",
@@ -148,5 +167,5 @@ export const capabilities: Array<[label: string, detail: string]> = [
   ["Production engineering", "Reliability, observability, migrations, legacy compatibility"],
   ["Remote delivery", "Australian, New Zealand, and UK clients since 2021, mostly async through tickets and pull requests, with daily standups where the team ran them"],
   ["Full-stack delivery", "Backend APIs, admin tools, and the user-facing interfaces that depend on them"],
-  ["Joining a codebase", "Six of the nine systems in the work archive were already in production when I joined"],
+  ["Joining a codebase", "Six of the ten systems in the work archive were already in production when I joined"],
 ];

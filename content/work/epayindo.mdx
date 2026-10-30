@@ -1,0 +1,82 @@
+---
+title: "Epayindo"
+---
+
+## System context
+
+Epayindo was a Laravel payment wallet: customers and merchants held balances, and merchants could take payments through it. RumahPro was a Laravel digital marketplace operated by the same client. Both started from purchased scripts, and neither script spoke to an Indonesian payment gateway or to the other application.
+
+PT Ciberindo Makmur Sejahtera engaged me as a freelancer from December 2019 to January 2020, concurrent with my employment at Java Multi Mandiri. My work sat on the payment path: connecting Epayindo to the Winpay gateway, and making RumahPro's checkout create and track its payments through Epayindo.
+
+## My scope
+
+<Scope>
+
+<Owned>
+
+- The Winpay payment request in Epayindo, storing Winpay's status and listener URLs against the transaction.
+- The Winpay notification endpoint: logging, forwarding the outcome to the merchant, and settling the transaction and wallet balance.
+- The RumahPro checkout API that authenticated against Epayindo, created the transaction, and linked it to the marketplace order.
+- The RumahPro invoice event and its WhatsApp and email notifications carrying the Epayindo payment link.
+
+</Owned>
+
+<TeamOwned>
+
+The wallet, merchant, and transaction model came from Epayindo's purchased script, and the catalogue, cart, and accounts from RumahPro's. The WhatsApp delivery API was a third-party service. Product direction and operations belonged to the client.
+
+</TeamOwned>
+
+</Scope>
+
+## Key engineering work
+
+<Story capability="Payment gateway" title="Settling Winpay notifications into the wallet">
+
+<Problem>
+
+Winpay reported a payment's outcome by calling back to Epayindo. That callback was the only signal that money had moved, and it had to update three parties: the transaction, the customer's wallet, and the merchant whose order was waiting on the result.
+
+</Problem>
+
+<Action>
+
+The notification endpoint recorded every inbound callback, with its URL and full body, before doing anything else. It then found the transaction by the ID Winpay sent back. On a success code it forwarded the transaction to the merchant's notification URL, when the payment belonged to a merchant, and logged the merchant's response alongside it. It changed the transaction to paid and credited the wallet only if the transaction was not already paid, then sent the payment confirmation by email and WhatsApp. On any other code it still forwarded the transaction, so a merchant learned about failures as well as successes.
+
+</Action>
+
+<Result>
+
+Each callback left an inbound record, and each forward an outbound record with the merchant's response. A repeated success callback for a paid transaction was forwarded again but did not credit the wallet a second time.
+
+</Result>
+
+</Story>
+
+<Story capability="Integration" title="Taking marketplace checkout through the wallet">
+
+<Problem>
+
+RumahPro needed its orders paid through Epayindo rather than its script's built-in payment options, and customers needed a way to reach the payment page after checkout.
+
+</Problem>
+
+<Action>
+
+I added a checkout API to RumahPro that validated the customer's email, phone, and items, created the marketplace order as pending, and signed in to the Epayindo API as a merchant, reusing the session token on later calls. It then created the Epayindo transaction and saved the returned transaction ID on the order, so either system's record could be traced to the other. For signed-in customers, order creation raised an invoice event whose listeners sent the invoice by email and the Epayindo payment link by WhatsApp. A transaction endpoint let RumahPro read the current state of a payment back from Epayindo.
+
+</Action>
+
+<Result>
+
+RumahPro orders went live paid through Epayindo payment links, with the Epayindo transaction ID stored on each order.
+
+</Result>
+
+</Story>
+
+## Technical decisions
+
+Each application kept its own records and referred to the other by ID. RumahPro did not store payment state of its own beyond the Epayindo transaction ID; it asked Epayindo when it needed the current state. That kept a single source of truth for whether an order had been paid, at the cost of an API call when the state was needed.
+
+Looking back, two things are worth changing. The notification endpoint trusted Winpay's response code without verifying a signature, and the paid check and the wallet credit were not wrapped in a transaction or a row lock, so two simultaneous callbacks could both pass the check. Later payment work, such as the MySQL locks on Funraisin's matched-giving path, is where I closed exactly that kind of gap.

@@ -20,6 +20,15 @@ export function ExperienceTimeline({ limit }: ExperienceTimelineProps) {
             <h3 className="font-heading text-2xl font-semibold">{experience.organization}</h3>
             <p className="mt-1 text-sm font-semibold text-signal">{experience.functionalScope}</p>
             <p className="mt-3 max-w-3xl leading-7 text-muted-foreground">{experience.summary}</p>
+            {experience.rebuild ? (
+              <p className="mt-2 text-sm text-muted-foreground">
+                Rebuilt from scratch as open source, with no client code or data:{" "}
+                <a href={experience.rebuild.href} target="_blank" rel="noopener noreferrer" className="font-mono text-xs text-foreground underline underline-offset-4 hover:text-signal">
+                  {experience.rebuild.label}
+                  <span className="sr-only"> (opens in a new tab)</span>
+                </a>
+              </p>
+            ) : null}
 
             {experience.assignments ? (
               <div className="mt-6 border-l border-border">

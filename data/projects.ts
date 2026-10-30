@@ -267,6 +267,41 @@ export const projects: Project[] = [
     contentDate: "2026-10-04T00:00:00+07:00",
   },
   {
+    slug: "epayindo",
+    title: "Epayindo",
+    organization: "PT Ciberindo Makmur Sejahtera",
+    period: "Dec 2019 - Jan 2020",
+    relationship: "Freelance",
+    role: "Backend Engineer",
+    type: "Payment wallet and marketplace checkout",
+    link: "https://epayindo.com",
+    summary:
+      "A Laravel payment wallet connected to the Winpay gateway, and a digital marketplace whose checkout ran through it.",
+    seoTitle: "Payment Gateway and Marketplace Checkout at Epayindo",
+    ogTitle: "Payment gateway and marketplace checkout",
+    seoDescription:
+      "How I connected a Laravel payment wallet to the Winpay gateway and built the marketplace checkout that created payments through its API.",
+    intervention:
+      "Built the Winpay payment and notification path in the Epayindo wallet, merchant notification forwarding, and the RumahPro checkout that created Epayindo transactions and sent payment links by WhatsApp.",
+    evidence:
+      "Both applications ran in production, with RumahPro orders paid through Epayindo payment links.",
+    glance: [
+      "Freelance work, concurrent with my job at Java Multi Mandiri",
+      "Both applications started from purchased scripts; the gateway work and the integration between them were mine",
+      "Logged every Winpay notification before acting on it, then forwarded the outcome to the merchant's notification URL",
+      "Credited the wallet only when a successful notification found the transaction unpaid, so a repeated callback did not credit twice",
+      "RumahPro checkout created an Epayindo transaction, stored its ID on the order, and sent the payment link by WhatsApp and email",
+    ],
+    inputs: ["Winpay notifications", "Marketplace orders"],
+    outputs: ["Wallet credits", "Merchant notifications", "Payment links"],
+    stack: ["PHP", "Laravel", "MySQL", "REST APIs", "Winpay", "WhatsApp API"],
+    status: "Production",
+    brief:
+      "Freelance work for PT Ciberindo Makmur Sejahtera, concurrent with my job at Java Multi Mandiri, across two Laravel applications built from purchased scripts: Epayindo, a payment wallet, and RumahPro, a digital marketplace. In Epayindo I added the Winpay gateway: payment requests that stored Winpay's status and listener URLs against the transaction, and a notification endpoint that logged each callback, forwarded the outcome to the merchant's notification URL, and credited the wallet only if the transaction was not already paid. In RumahPro I built the checkout that signed in to the Epayindo API, created the transaction, saved its ID on the order, and sent the customer the payment link by WhatsApp and email.",
+    publishedDate: "2026-10-30T00:00:00+07:00",
+    contentDate: "2026-10-30T00:00:00+07:00",
+  },
+  {
     slug: "e-pnbp-mobile",
     title: "e-PNBP Mobile",
     organization: "Reksa Karya",
