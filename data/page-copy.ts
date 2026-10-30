@@ -26,8 +26,8 @@ export type PageCopy = {
 
 export const pageCopy = {
   home: {
-    // Assignment strip rebuilt as a list of assignments.
-    contentDate: "2026-10-04T00:00:00+07:00",
+    // Closing line points to the experience page instead of repeating the SoftwareSeni summary.
+    contentDate: "2026-10-31T00:00:00+07:00",
     eyebrow: `${profile.experienceYears} years / ${profile.location}`,
     title: "Senior Backend Engineer building reliable payment, integration, and data systems.",
     ogTitle: "Building reliable payment, integration, and data systems.",
@@ -36,13 +36,13 @@ export const pageCopy = {
     ogAlt: "Rizki Kurniawan - Senior Backend Engineer",
   },
   work: {
-    // Case-study cards carry the revised Evidence lines.
-    contentDate: "2026-10-04T00:00:00+07:00",
+    // Public code section added under the archive.
+    contentDate: "2026-10-31T00:00:00+07:00",
     eyebrow: "Work archive",
     title: "Backend systems I've shipped across payments, integrations, data, and operations.",
     description:
       "Each entry names the employer or direct client, my role, the work I owned, led, or contributed to, and the result.",
-    meta: "Nine production systems in payments, CRM integration, search, and warehouse operations, each naming the employer, my role, the work I owned, and the result.",
+    meta: "Ten production systems in payments, CRM integration, search, and warehouse operations, each naming the employer, my role, the work I owned, and the result.",
     ogNote: "Each entry names the client, my role, and the result.",
     ogAlt: "Backend engineering case studies by Rizki Kurniawan",
   },

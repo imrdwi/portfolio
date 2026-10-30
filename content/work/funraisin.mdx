@@ -72,6 +72,8 @@ I moved the calculation into the model used by donation pages, then added a per-
 
 Matched-giving requests for the same pool now pass through one locked calculation and insert path. I submitted two donations to the same pool at the same moment from separate browser sessions, then read the donation rows back to see that one match calculation had landed and the total had stayed under the sponsor's cap. This was a manual check, not a load test: it covers a genuine concurrent submission and says nothing about sustained volume.
 
+I later rebuilt the pattern from scratch, without client code, at [github.com/imrdwi/matched-giving-lock](https://github.com/imrdwi/matched-giving-lock). The rebuild adds what the production change did not have: an automated test that fires real concurrent requests.
+
 </Result>
 
 <figure>
@@ -328,4 +330,4 @@ I have added a lock only where I could show the existing code taking money it sh
 
 **A merge conflict I did not reread.** Another developer resolved a merge conflict on my branch, and I did not read the resolution closely. A bracket was left wrong, and test sites broke once they pulled the latest develop. It was caught before release. Since then I read every resolved conflict, mine or someone else's, before the branch moves on.
 
-This is an active assignment. Source and customer data are Funraisin's.
+This is an active assignment. Source and customer data are Funraisin's; the public [matched-giving-lock](https://github.com/imrdwi/matched-giving-lock) rebuild contains none of either.

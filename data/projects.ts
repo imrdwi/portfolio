@@ -82,7 +82,7 @@ export const projects: Project[] = [
     status: "Production",
     featured: true,
     // No-figures and no-test-suite notes, client quotes, initiative delivery, and an accurate PURL import story.
-    contentDate: "2026-10-04T00:00:00+07:00",
+    contentDate: "2026-10-31T00:00:00+07:00",
   },
   {
     slug: "leadplus",

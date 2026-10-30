@@ -138,8 +138,9 @@ export default function Home() {
 
       <section className="site-shell border-t border-border py-10 sm:py-14">
         <div className="flex flex-wrap items-center justify-between gap-4">
+          {/* The hero card and the assignment strip already name SoftwareSeni and Funraisin. */}
           <p className="max-w-2xl text-lg leading-7 text-muted-foreground">
-            {experiences[0].summary}
+            Freelance engagements, earlier employment, and how I work.
           </p>
           <Link href="/experience#experience" className="whitespace-nowrap font-semibold text-signal underline decoration-1 underline-offset-4 hover:decoration-2">
             Full experience →

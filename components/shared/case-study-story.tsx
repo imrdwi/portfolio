@@ -46,7 +46,7 @@ function Beat({ label, children }: { label: string; children?: ReactNode }) {
   return (
     <div className="grid gap-1 bg-background py-3 sm:grid-cols-[5.5rem_1fr] sm:gap-5">
       <p className="field-label pt-1">{label}</p>
-      <div className="leading-7 text-muted-foreground [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 [&_code]:text-foreground [&_p]:my-0 [&_strong]:font-semibold [&_strong]:text-foreground">
+      <div className="leading-7 text-muted-foreground [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 [&_a]:text-foreground [&_a]:underline [&_a]:decoration-1 [&_a]:underline-offset-4 [&_a:hover]:text-signal [&_code]:text-foreground [&_p]:my-0 [&_p+p]:mt-3 [&_strong]:font-semibold [&_strong]:text-foreground">
         {children}
       </div>
     </div>
