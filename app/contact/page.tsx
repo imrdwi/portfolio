@@ -15,7 +15,7 @@ export const metadata = createMetadata({
 
 export default function ContactPage() {
   return (
-    <div className="site-shell grid min-h-[calc(100svh-4rem)] gap-12 py-16 lg:grid-cols-[1.1fr_0.9fr] lg:items-center lg:py-24">
+    <div className="site-shell grid min-h-[calc(100svh-4rem)] gap-12 py-16 lg:grid-cols-[1.1fr_0.9fr] lg:items-start lg:py-24">
       <SectionHeading
         level="h1"
         eyebrow={pageCopy.contact.eyebrow}

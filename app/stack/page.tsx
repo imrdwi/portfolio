@@ -1,3 +1,4 @@
+import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { SectionHeading } from "@/components/shared/section-heading";
 import { createMetadata } from "@/lib/metadata";
@@ -33,7 +34,7 @@ export default function StackPage() {
                 <h2 className="font-heading text-2xl font-semibold">{group.label}</h2>
                 <p className="mt-2 text-sm leading-6 text-muted-foreground">{group.description}</p>
               </div>
-              <ul className="mt-6 grid gap-px bg-border sm:grid-cols-2 lg:mt-0">
+              <ul className="mt-6 grid self-start gap-px bg-border sm:grid-cols-2 lg:mt-0">
                 {group.items.map((item) => (
                   <li
                     key={item}
@@ -50,7 +51,7 @@ export default function StackPage() {
                 <p className="field-label">Evidence</p>
                 <ul className="mt-3 space-y-2">
                   {group.evidence.map((item) => (
-                    <li key={item.href}><Link href={item.href} className="text-sm font-semibold text-signal hover:underline">{item.label} →</Link></li>
+                    <li key={item.href}><Link href={item.href} className="text-sm font-semibold text-signal hover:underline">{item.label} <ArrowRight className="ml-1 inline size-4" aria-hidden="true" /></Link></li>
                   ))}
                 </ul>
               </div>

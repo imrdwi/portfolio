@@ -130,18 +130,14 @@ export default async function CaseStudyPage({ params }: CaseStudyPageProps) {
 
   const story = (
     <>
-      <section className="site-shell grid gap-8 pb-12 sm:pb-16 lg:grid-cols-[1fr_1fr]">
-        <SystemTopology
-          inputs={project.inputs}
-          outputs={project.outputs}
-          centerLabel={project.type}
-          caption="What this system takes in, and what reads from it."
-        />
-        <div className="bg-card">
-          <div className="bg-card p-6">
-            <p className="field-label">What I built</p>
-            <p className="mt-3 text-lg leading-7">{project.intervention}</p>
-          </div>
+      <section className="site-shell pb-12 sm:pb-16">
+        <div className="mx-auto max-w-3xl">
+          <SystemTopology
+            inputs={project.inputs}
+            outputs={project.outputs}
+            centerLabel={project.type}
+            caption="What this system takes in, and what reads from it."
+          />
         </div>
       </section>
 

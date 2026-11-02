@@ -16,7 +16,7 @@ export function ProjectCard({ project, headingLevel = "h3", variant = "default" 
   const isCompact = variant === "compact";
 
   const padding = isFeatured
-    ? "py-10 pl-4 pr-0 sm:pl-10 sm:pr-4"
+    ? "py-10 pl-4 pr-0 sm:pl-3.5 sm:pr-4"
     : isCompact
       ? "py-5 px-0 sm:px-4"
       : "py-7 px-0 sm:px-4";

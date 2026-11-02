@@ -1,3 +1,4 @@
+import { ArrowUpRight } from "lucide-react";
 import { ProjectCard } from "@/components/shared/project-card";
 import { SectionHeading } from "@/components/shared/section-heading";
 import Link from "next/link";
@@ -77,8 +78,9 @@ export default function WorkPage() {
           <ul className="mt-8 border-b border-border">
             {publicRepos.map((repo) => (
               <li key={repo.name} className="grid gap-2 border-t border-border py-5 sm:grid-cols-[13rem_minmax(0,1fr)_11rem] sm:items-baseline sm:gap-5 sm:px-4">
-                <a href={repo.href} target="_blank" rel="noopener noreferrer" className="font-mono text-sm font-semibold hover:text-signal">
+                <a href={repo.href} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 justify-self-start font-mono text-sm font-semibold underline decoration-1 underline-offset-4 hover:text-signal hover:decoration-2">
                   {repo.name}
+                  <ArrowUpRight className="size-3.5 shrink-0" aria-hidden="true" />
                   <span className="sr-only"> on GitHub (opens in a new tab)</span>
                 </a>
                 <p className="leading-7 text-muted-foreground">{repo.summary}</p>

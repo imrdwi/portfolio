@@ -1,7 +1,7 @@
 import { Download, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CopyEmailButton } from "@/components/shared/copy-email-button";
-import { experiences } from "@/data/experience";
+import { experiences, formatPeriod } from "@/data/experience";
 import { profile } from "@/data/profile";
 import { pageCopy } from "@/data/page-copy";
 import { publicRepos } from "@/data/public-code";
@@ -53,7 +53,7 @@ export default function ResumePage() {
                 >
                   <div className="flex flex-wrap items-baseline justify-between gap-2">
                     <h3 className="font-heading text-xl font-semibold">{entry.organization}</h3>
-                    <p className="font-mono text-[0.68rem] text-muted-foreground">{entry.period}</p>
+                    <p className="font-mono text-[0.68rem] text-muted-foreground">{formatPeriod(entry.period)}</p>
                   </div>
                   <p className="mt-1 text-sm font-semibold text-signal">{entry.functionalScope} · {entry.relationship}</p>
                   <p className="mt-2 text-sm leading-6 text-muted-foreground">{entry.summary}</p>
@@ -62,7 +62,7 @@ export default function ResumePage() {
                       {entry.assignments.map((assignment) => (
                         <li key={assignment.name} className="text-sm leading-6">
                           <span className="font-semibold">{assignment.name}</span>
-                          <span className="text-muted-foreground"> · {assignment.functionalScope} · {assignment.period}</span>
+                          <span className="text-muted-foreground"> · {assignment.functionalScope} · {formatPeriod(assignment.period)}</span>
                           <span className="block text-muted-foreground">{assignment.summary}</span>
                         </li>
                       ))}

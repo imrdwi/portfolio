@@ -27,7 +27,7 @@ export default function ExperiencePage() {
             title={pageCopy.experience.title}
             description={pageCopy.experience.description}
           />
-          <div className="border-l-2 border-signal pl-6">
+          <div className="self-start border-l-2 border-signal pl-6">
             <p className="field-label text-signal">How I work</p>
             <p className="mt-4 text-xl leading-8">
               I trace the current behavior before changing it, keep existing configuration working, and check the result in production after release.
@@ -54,7 +54,7 @@ export default function ExperiencePage() {
         </div>
       </section>
 
-      <section className="site-shell grid gap-12 py-16 sm:py-24 lg:grid-cols-[0.72fr_1.28fr]">
+      <section className="site-shell grid gap-12 pb-16 sm:pb-24 lg:grid-cols-[0.72fr_1.28fr]">
         <div>
           <h2 className="field-label">Engineering profile</h2>
           <div className="mt-5 space-y-5 text-lg leading-8 text-muted-foreground">
@@ -67,7 +67,7 @@ export default function ExperiencePage() {
             </p>
           </div>
         </div>
-        <div className="grid gap-px bg-border sm:grid-cols-2">
+        <div className="grid self-start gap-px bg-border sm:grid-cols-2">
           {capabilities.map(([label, value]) => (
             <div key={label} className="bg-card p-6">
               <p className="field-label">{label}</p>
