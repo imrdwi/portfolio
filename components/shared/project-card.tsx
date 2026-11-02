@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 import type { Project } from "@/data/projects";
+import { formatPeriod } from "@/data/experience";
 import { StackBadge } from "@/components/shared/stack-badge";
 
 interface ProjectCardProps {
@@ -31,7 +32,7 @@ export function ProjectCard({ project, headingLevel = "h3", variant = "default" 
         className={`grid gap-5 sm:grid-cols-[minmax(0,0.75fr)_minmax(0,1.25fr)_auto] sm:items-start ${padding}`}
       >
         <div>
-          <p className="field-label">{project.status} / {project.period}</p>
+          <p className="field-label">{project.status} / {formatPeriod(project.period)}</p>
           <Heading
             className={`mt-2 font-heading font-semibold leading-tight group-hover:text-signal ${
               isFeatured ? "text-3xl" : "text-2xl"

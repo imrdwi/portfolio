@@ -59,7 +59,7 @@ export function SiteHeader() {
               );
             })}
           </ul>
-          <CopyEmailButton className="hidden h-9 items-center border border-signal px-3 text-sm font-semibold text-signal transition-colors hover:bg-primary hover:text-primary-foreground md:inline-flex">
+          <CopyEmailButton className="hidden h-9 items-center border border-border px-3 text-sm font-semibold text-foreground transition-colors hover:border-signal hover:text-signal md:inline-flex">
             {profile.email}
             <span className="sr-only"> (click to copy)</span>
           </CopyEmailButton>

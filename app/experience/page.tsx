@@ -80,7 +80,7 @@ export default function ExperiencePage() {
       <section id="experience" className="section-rule scroll-mt-16 bg-card">
         <div className="site-shell py-16 sm:py-24">
           <SectionHeading
-            title="Employment and client assignments."
+            title="Employment and client assignments"
             description="SoftwareSeni assignments are nested under one employer. Direct freelance work is listed separately."
           />
           <div className="mt-10"><ExperienceTimeline /></div>
@@ -88,7 +88,7 @@ export default function ExperiencePage() {
       </section>
 
       <section className="site-shell flex flex-wrap items-center justify-between gap-6 py-14">
-        <h2 className="font-heading text-3xl font-semibold">Case studies for the assignments above.</h2>
+        <h2 className="font-heading text-3xl font-semibold">Case studies for the assignments above</h2>
         <div className="flex gap-3">
           <Button asChild><Link href="/work">View work</Link></Button>
           <Button asChild variant="outline"><CopyEmailButton>Copy email</CopyEmailButton></Button>

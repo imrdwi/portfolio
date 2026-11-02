@@ -27,7 +27,7 @@ export function SiteFooter() {
         </div>
       </div>
       <div className="border-t border-border">
-        <div className="site-shell flex flex-wrap justify-between gap-2 py-4 font-mono text-[0.65rem] uppercase tracking-[0.12em] text-muted-foreground">
+        <div className="site-shell flex flex-wrap justify-between gap-2 py-4 font-mono text-xs text-muted-foreground">
           <span>Yogyakarta, Indonesia</span>
           <span>© {new Date().getFullYear()} Rizki Kurniawan</span>
         </div>

@@ -1,19 +1,11 @@
 /**
- * Shared case-study content primitives, used by the case-study route so every
- * project presents its engineering stories with the same three beats and its
- * secondary work in the same compact form.
+ * Case-study MDX components.
  *
- * IMPORTANT - why these take children and string props only:
- * next-mdx-remote v6 defaults to `blockJS: true`, whose remark plugin strips all
- * JavaScript expressions from MDX, explicitly including JSX attribute expressions
- * (`<Component prop={value} />`). Array or JSX-valued props are silently dropped
- * and arrive as undefined. Rather than disable that hardening for content this app
- * renders, every prop here is a plain string and all content comes through
- * children. Do not reintroduce `prop={...}` in the MDX.
+ * Props are plain strings and content comes through children: next-mdx-remote
+ * v6 (`blockJS: true`) strips JSX attribute expressions, so `prop={...}` in MDX
+ * silently arrives as undefined.
  */
 import type { ReactNode } from "react";
-
-/* ---------------------------------------------------------------- Story ---- */
 
 export function storyAnchor(title: string) {
   return `story-${title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}`;
@@ -34,9 +26,7 @@ export function Story({
         <h3 id={storyAnchor(title)} tabIndex={-1} className="scroll-mt-24 font-heading text-xl font-semibold tracking-[-0.015em] text-foreground">{title}</h3>
         {capability ? <p className="field-label">{capability}</p> : null}
       </div>
-      {/* Figures sit under not-prose, so the typography caption treatment
-          does not reach them. Mirror prose-lg figcaption exactly (16px/1.5,
-          captions token) so story captions read the same as the overview. */}
+      {/* Figures sit under not-prose; mirror prose-lg figcaption styling. */}
       <div className="mt-4 grid gap-px bg-border [&_figure]:bg-background [&_figure]:py-5 [&_figcaption]:mt-4 [&_figcaption]:text-base [&_figcaption]:leading-6 [&_figcaption]:text-(--tw-prose-captions)">{children}</div>
     </section>
   );
@@ -68,8 +58,6 @@ export function Result({ children }: { children?: ReactNode }) {
   return <Beat label="Result">{children}</Beat>;
 }
 
-/* -------------------------------------------------------- Contributions ---- */
-
 export function Contributions({ children }: { children?: ReactNode }) {
   return (
     <ul className="not-prose mt-6 grid list-none gap-px border border-border bg-border p-0 sm:grid-cols-2">
@@ -88,8 +76,6 @@ export function Contribution({ label, children }: { label: string; children?: Re
     </li>
   );
 }
-
-/* ---------------------------------------------------------------- Scope ---- */
 
 export function Scope({ children }: { children?: ReactNode }) {
   return <div className="not-prose mt-6 grid gap-px bg-border">{children}</div>;

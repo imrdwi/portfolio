@@ -79,10 +79,8 @@ export function ImageLightbox({ src, alt, width, height, children }: ImageLightb
   // the flight never shows an empty box while the larger file loads.
   const [previewSrc, setPreviewSrc] = React.useState<string | null>(null);
   const [mainReady, setMainReady] = React.useState(false);
-  // While the image is flying, only the small, already-decoded preview is
-  // drawn. On a large or high-density screen the full-size image is a
-  // texture many times the size of a phone's, and scaling it every frame is
-  // what makes the flight stutter on a busy GPU. It swaps in on landing.
+  // Draw only the decoded preview mid-flight; scaling the full-size texture
+  // every frame stutters on large screens. The full image swaps in on landing.
   const [flying, setFlying] = React.useState(false);
   const [openCount, setOpenCount] = React.useState(0);
   const [closing, setClosing] = React.useState(false);
@@ -384,10 +382,7 @@ export function ImageLightbox({ src, alt, width, height, children }: ImageLightb
 
   return (
     <>
-      {/* The image sits inside the button, out of reach of the prose
-          `figure > *` margin reset, so it is zeroed here. Otherwise its
-          default image margin makes the space around it clickable and
-          pushes the caption away. */}
+      {/* The prose `figure > *` margin reset can't reach the nested img. */}
       <button
         ref={triggerRef}
         type="button"

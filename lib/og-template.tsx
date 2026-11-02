@@ -7,21 +7,12 @@ import { profile } from "@/data/profile";
 export const ogSize = { width: 1200, height: 630 };
 export const ogContentType = "image/png";
 
-/**
- * Bump when the card's LAYOUT changes rather than its text.
- *
- * `ogImage()` hashes card content into the image URL, but content-only hashing
- * cannot see a template edit: dropping the wordmark or resizing the monogram
- * leaves every string identical, so scrapers would keep serving the old PNG.
- * This constant is mixed into that hash.
- */
+/** Bump when the card layout changes; the image URL hash only sees card text. */
 export const ogTemplateVersion = 3;
 
 const FONT_DIR = join(process.cwd(), "assets", "fonts");
 
-// Satori has no system fonts and cannot read the site's next/font output, so the
-// card's typefaces are loaded from committed TTFs. Without this the card falls
-// back to whatever the build image provides, which is not the site's Barlow.
+// Satori can't use system fonts or next/font output, so load the committed TTFs.
 let fontCache: Promise<Array<{ name: string; data: Buffer; weight: 400 | 600 | 700; style: "normal" }>> | null = null;
 
 export function ogFonts() {

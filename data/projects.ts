@@ -10,7 +10,7 @@ export type Project = {
   redirect?: string;
   summary: string;
   seoTitle: string;
-  /** Headline for the case study's /og card. Explicit, so it never has to be parsed out of seoTitle. */
+  /** Headline for the case study's /og card. */
   ogTitle: string;
   /** Short, qualified proof for social previews when available. */
   ogEvidence?: string;
@@ -30,17 +30,9 @@ export type Project = {
    * Same evidence rule as the MDX: restate only what the story supports.
    */
   brief?: string;
-  /**
-   * When this case study's content last materially changed, as an ISO 8601
-   * datetime with offset (e.g. "2026-09-04T18:20:00+07:00"). Feeds the
-   * sitemap's `lastModified`; omit it to inherit the sitemap default.
-   */
+  /** Last material content change (ISO 8601 with offset), for the sitemap. */
   contentDate?: string;
-  /**
-   * When this case study first went live. Feeds `article:published_time` and
-   * the Article node's `datePublished`; omit it to inherit
-   * {@link defaultPublishedDate}. Set it on case studies added after launch.
-   */
+  /** First publish date; defaults to {@link defaultPublishedDate}. Set it for case studies added after launch. */
   publishedDate?: string;
 };
 
@@ -81,7 +73,6 @@ export const projects: Project[] = [
     stack: ["PHP", "CodeIgniter", "MySQL", "Stripe", "jQuery", "Bootstrap", "AWS S3", "Salesforce"],
     status: "Production",
     featured: true,
-    // No-figures and no-test-suite notes, client quotes, initiative delivery, and an accurate PURL import story.
     contentDate: "2026-10-31T00:00:00+07:00",
   },
   {
@@ -117,7 +108,6 @@ export const projects: Project[] = [
     stack: ["PHP", "Laravel", "GraphQL", "MongoDB", "MySQL", "Redis", "Laravel Horizon", "React", "AWS S3", "AWS Lambda", "Cloudflare R2", "Datadog"],
     status: "Production",
     featured: true,
-    // No-figures note, lead quotes, testing and deferred-image contributions, and the large-sync cause of the R2 move.
     contentDate: "2026-10-04T00:00:00+07:00",
   },
   {
@@ -153,7 +143,6 @@ export const projects: Project[] = [
     status: "Production",
     brief:
       "A two-month SoftwareSeni assignment on Moladin's warehouse service, which tracks used cars and their BPKB ownership certificates as they move between warehouses. I extended an existing TypeScript and Express service whose design predated me. The main change gave interwarehouse transfers two deadlines, one for the manager's response and one for the car's arrival, so a scheduled sweep could cancel each stall with its own reason in the inventory history. I also kept borrow and buyout deadlines off Sundays, limited physical check-in and check-out to staff tied to the warehouse, and returned capability flags so the mobile app offered only actions the backend would accept. QA and I checked the Sunday and authorization rules by hand; the Sunday rule has no regression test.",
-    // Summary-first layout with the full story collapsed; phrasing pass.
     contentDate: "2026-10-04T00:00:00+07:00",
   },
   {
@@ -190,7 +179,6 @@ export const projects: Project[] = [
     status: "Production",
     brief:
       "A direct freelance engagement with Prasetiya Mulya University, concurrent with my SoftwareSeni role, covering executive-course enrollment and payments. Most of my backend work sat on the path from purchase to access: Midtrans checkout with callback signature and status-API checks before any enrollment, invoice PDFs and confirmation email after a verified payment, and account provisioning into CoursePlayer, a separate Laravel application, so learners could open paid content without signing in again. I also built voucher enrollment on the normal order and enrollment records, and integrated the university's private SSO package while the public pages moved from Vue to server-rendered Laravel for search indexing. I walked each payment state through the Midtrans sandbox one at a time.",
-    // Summary-first layout; SSO and voucher stories condensed into contributions.
     contentDate: "2026-10-04T00:00:00+07:00",
   },
   {
@@ -226,7 +214,6 @@ export const projects: Project[] = [
     status: "Production",
     brief:
       "SoftwareSeni's own multi-tenant time-tracking product, used internally and by the client Agentpoint. Pepy keeps transactional data in MySQL and a search copy in Elasticsearch, and most of my six months went into keeping that copy correct. Each model declares its searchable fields and a pair of converters next to it, so a schema change has an explicit checklist in review. A rebuild indexes into a new index and repoints an alias, so search stays up during a reindex; DevOps verified the affected index in production afterwards, though that check does not show how writes during a rebuild reach the new index. I also built the Trello, GitLab, and Google OAuth integrations, including reconnection after an upstream token is revoked.",
-    // Summary-first layout with the full story collapsed; phrasing pass.
     contentDate: "2026-10-04T00:00:00+07:00",
   },
   {
@@ -263,7 +250,6 @@ export const projects: Project[] = [
     status: "Production",
     brief:
       "A six-month SoftwareSeni assignment on a children's English-learning product for Fun Gum in Auckland, where I was the junior engineer on an established team. Subscription state decided what a child, parent, or teacher could open, and three providers wrote into it: Stripe, Midtrans, and WooCommerce. I worked through that lifecycle, including a signup bug that wrote plain \"Paid\" instead of the monthly status, confirmed by reading the database row after a real checkout. The finding I would point to first is a diagnosis: lesson skips took two to four minutes, and running the same script from an Indonesian and an Australian server traced it to latency against the RDS database in Australia. I reported it so the hosting decision stayed with the team.",
-    // Summary-first layout; localization story condensed into a contribution.
     contentDate: "2026-10-04T00:00:00+07:00",
   },
   {
@@ -334,7 +320,6 @@ export const projects: Project[] = [
     status: "Production",
     brief:
       "Freelance work for Reksa Karya, concurrent with my job at Java Multi Mandiri and early in my career, on a government system for non-tax state revenue from telecom and postal operators. I built much of a Flutter staff app that replaced an earlier React Native client, and extended the Laravel mobile API behind it. Revenue calculations stayed on the server. The API branched on billing category so postal records got their own mappings, and I compared one operator's postal figures in the mobile app against the web application to confirm they matched. I also moved sign-in to revocable Sanctum device tokens while older builds kept working through a legacy-token fallback.",
-    // Summary-first layout; neutral hero caption.
     contentDate: "2026-10-04T00:00:00+07:00",
   },
   {
@@ -371,7 +356,6 @@ export const projects: Project[] = [
     status: "Production",
     brief:
       "Early-career work at Java Multi Mandiri on a Laravel inventory backend shared by warehouses, direct sales, Shopee stores, and an Electron point-of-sale client. I built the application layer around an existing Shopee client package: order retrieval that carried on past a failing store and told operators which one had failed, and an explicit mapping between each local variant and its Shopee listing. Stock pushes to Shopee ran inline, so the two values could still drift after a rate limit or failed request; a manual sync let operators compare both and push again. I also worked on stock-opname corrections, which record a physical-count difference as an inbound or outbound movement with warehouse context.",
-    // Summary-first layout with the full story collapsed; phrasing pass.
     contentDate: "2026-10-04T00:00:00+07:00",
   },
   {
@@ -407,7 +391,6 @@ export const projects: Project[] = [
     status: "Production",
     brief:
       "An internal Laravel ERP and CRM at Java Multi Mandiri, early in my career, where I implemented assigned slices inside a team-built system. I owned the invoice feature: item recalculation, partial customer receipts that reject anything above the remaining balance, and paid status once receipts reach the total, which I checked against a real invoice on both sides of that limit. I also changed IT issue assignment to support several technicians, migrating the existing data and confirming that closed issues kept their history. When the business moved the ERP onto Odoo, I wrote the Python modules that carried this functionality across, and staff used them in production before I left.",
-    // Summary-first layout with the full story collapsed; phrasing pass.
     contentDate: "2026-10-04T00:00:00+07:00",
   },
 ];

@@ -130,9 +130,7 @@ export const experiences: Experience[] = [
   },
 ];
 
-/** The two most recent assignments, shaped for the homepage.
- * `label` has no data-layer source, so it is derived by position:
- * `assignments` is ordered most-recent-first. */
+/** The two most recent assignments for the homepage (assignments are newest first). */
 export const homeAssignments = (experiences[0].assignments ?? [])
   .slice(0, 2)
   .map((assignment, index) => ({
@@ -143,17 +141,21 @@ export const homeAssignments = (experiences[0].assignments ?? [])
     href: `/work/${assignment.slug}`,
   }));
 
-/** Compact period for the homepage strip: "Aug–Sep 2022", "Oct 2022–May 2025", "Jun 2025–". */
+/** Compact period for the homepage strip: "Aug–Sep 2022", "Oct 2022 – May 2025", "Jun 2025 – Present". */
 function compactPeriod(period: string) {
   const [start, end] = period.split(" - ");
-  if (!end || end === "Present") return `${start}–now`;
+  if (!end || end === "Present") return `${start} – Present`;
   const [startMonth, startYear] = start.split(" ");
   const [endMonth, endYear] = end.split(" ");
-  return startYear === endYear ? `${startMonth}–${endMonth} ${endYear}` : `${start}–${end}`;
+  return startYear === endYear ? `${startMonth}–${endMonth} ${endYear}` : `${start} – ${end}`;
 }
 
-/** The employer strip on the homepage: every assignment, most recent first.
- * Derived so an assignment's dates are edited in one place, not three. */
+/** "Aug 2021 - Present" → "Aug 2021 – Present". compactPeriod parses the stored hyphen. */
+export function formatPeriod(period: string) {
+  return period.replace(" - ", " – ");
+}
+
+/** Every assignment for the homepage employer strip, newest first. */
 export const assignmentStrip = (experiences[0].assignments ?? []).map((assignment, index) => ({
   name: assignment.shortName ?? assignment.name,
   period: compactPeriod(assignment.period),

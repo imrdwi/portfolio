@@ -1,13 +1,12 @@
 import Link from "next/link";
-import { ArrowRight, Mail } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ProjectCard } from "@/components/shared/project-card";
 import { SectionHeading } from "@/components/shared/section-heading";
-import { CopyEmailButton } from "@/components/shared/copy-email-button";
 import { profile } from "@/data/profile";
 import { pageCopy } from "@/data/page-copy";
 import { featuredProjects } from "@/data/projects";
-import { assignmentStrip, experiences, homeAssignments } from "@/data/experience";
+import { assignmentStrip, experiences, formatPeriod, homeAssignments } from "@/data/experience";
 import { createMetadata } from "@/lib/metadata";
 import { ogCards } from "@/lib/og-content";
 
@@ -51,7 +50,7 @@ export default function Home() {
       <section className="border-b border-border">
         <div className="site-shell grid gap-10 py-10 sm:py-14 lg:grid-cols-[minmax(0,1.15fr)_minmax(24rem,0.85fr)] lg:items-center lg:gap-12 lg:py-14">
           <div>
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 font-mono text-[0.7rem] uppercase tracking-[0.14em] text-muted-foreground">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 font-mono text-xs text-muted-foreground">
               <span className="text-signal">{profile.name}</span>
               <span>{profile.location}</span>
             </div>
@@ -68,9 +67,6 @@ export default function Home() {
               <Button asChild size="lg" variant="outline">
                 <Link href="/resume">Resume <ArrowRight /></Link>
               </Button>
-              <Button asChild size="lg" variant="ghost">
-                <CopyEmailButton>Copy email <Mail /></CopyEmailButton>
-              </Button>
             </div>
           </div>
 
@@ -78,12 +74,12 @@ export default function Home() {
             <div className="border-b border-border p-6 sm:p-7">
               <p className="field-label">Current employer</p>
               <p className="mt-3 font-heading text-3xl font-semibold">{experiences[0].organization}</p>
-              <p className="mt-2 font-mono text-xs text-muted-foreground">{experiences[0].period}</p>
+              <p className="mt-2 font-mono text-xs text-muted-foreground">{formatPeriod(experiences[0].period)}</p>
             </div>
             <div className="border-b border-border p-6 sm:p-7">
               <p className="field-label">Current client assignment</p>
               <p className="mt-3 font-heading text-3xl font-semibold">{homeAssignments[0].name}</p>
-              <p className="mt-2 font-mono text-xs text-muted-foreground">{homeAssignments[0].period}</p>
+              <p className="mt-2 font-mono text-xs text-muted-foreground">{formatPeriod(homeAssignments[0].period)}</p>
             </div>
             <dl className="grid gap-px bg-border sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
               {[
@@ -102,10 +98,10 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="border-y border-border bg-card">
+      <section className="bg-card">
         <div className="site-shell flex flex-col gap-3 py-4 sm:flex-row sm:items-baseline sm:gap-6">
-          <p className="shrink-0 whitespace-nowrap font-mono text-[0.68rem] uppercase tracking-[0.14em] text-signal">
-            {experiences[0].organization} {experiences[0].period.replace(" - ", "–")}
+          <p className="shrink-0 whitespace-nowrap font-mono text-xs text-signal">
+            {experiences[0].organization} {formatPeriod(experiences[0].period)}
           </p>
           <ul aria-label={`${experiences[0].organization} assignments`} className="flex flex-wrap gap-x-5 gap-y-2 text-sm">
             {assignmentStrip.map((assignment) => (
@@ -122,8 +118,8 @@ export default function Home() {
         <div className="site-shell py-16 sm:py-24">
           <div className="flex flex-wrap items-end justify-between gap-6">
             <SectionHeading
-              eyebrow="Selected work"
-              title="Selected production systems."
+              eyebrow="Case studies"
+              title="Selected production systems"
               description="Payment concurrency at Funraisin and CRM integration reliability at Leadplus: the failures, decisions, and results."
             />
             <Link href="/work" className="font-semibold text-signal underline decoration-1 underline-offset-4 hover:decoration-2">
@@ -136,14 +132,13 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="site-shell border-t border-border py-10 sm:py-14">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          {/* The hero card and the assignment strip already name SoftwareSeni and Funraisin. */}
+      <section className="border-t border-border">
+        <div className="site-shell flex flex-wrap items-center justify-between gap-4 py-10 sm:py-14">
           <p className="max-w-2xl text-lg leading-7 text-muted-foreground">
             Freelance engagements, earlier employment, and how I work.
           </p>
           <Link href="/experience#experience" className="whitespace-nowrap font-semibold text-signal underline decoration-1 underline-offset-4 hover:decoration-2">
-            Full experience →
+            Full experience <ArrowRight className="ml-1 inline size-4" aria-hidden="true" />
           </Link>
         </div>
       </section>

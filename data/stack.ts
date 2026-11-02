@@ -7,13 +7,7 @@ export type StackGroup = {
   evidence: { label: string; href: string }[];
 };
 
-/**
- * Single source of truth for technical capability.
- *
- * Rendered on /stack, on /resume (via `resumeLabel`), and flattened into the
- * Person node's `knowsAbout` in app/layout.tsx. Add a technology here only —
- * the other two surfaces derive from it.
- */
+/** Technical capability, rendered on /stack and /resume and in the Person JSON-LD `knowsAbout`. */
 export const stackGroups: StackGroup[] = [
   {
     label: "Core backend",
@@ -42,7 +36,7 @@ export const stackGroups: StackGroup[] = [
     label: "Integration and architecture",
     resumeLabel: "Integration",
     description: "How services exchange data, and what keeps that correct when a provider does not cooperate.",
-    items: ["Webhooks", "Data synchronization", "Data normalization", "Retries", "Idempotency", "Reconciliation", "System Integration", "CRM Systems", "Microservices"],
+    items: ["Webhooks", "Data synchronization", "Data normalization", "Retries", "Idempotency", "Reconciliation", "CRM Systems"],
     evidence: [
       { label: "Seven CRM providers", href: "/work/leadplus" },
       { label: "Marketplace stock reconciliation", href: "/work/stockraken" },

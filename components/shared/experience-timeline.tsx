@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { experiences } from "@/data/experience";
+import { experiences, formatPeriod } from "@/data/experience";
 
 interface ExperienceTimelineProps {
   limit?: number;
@@ -14,7 +14,7 @@ export function ExperienceTimeline({ limit }: ExperienceTimelineProps) {
         <article key={experience.organization} className="grid border-t border-border py-7 md:grid-cols-[13rem_1fr] md:gap-8">
           <div>
             <p className="field-label">{experience.relationship}</p>
-            <p className="mt-2 font-mono text-xs text-muted-foreground">{experience.period}</p>
+            <p className="mt-2 font-mono text-xs text-muted-foreground">{formatPeriod(experience.period)}</p>
           </div>
           <div className="mt-4 md:mt-0">
             <h3 className="font-heading text-2xl font-semibold">{experience.organization}</h3>
@@ -42,7 +42,7 @@ export function ExperienceTimeline({ limit }: ExperienceTimelineProps) {
                       ) : (
                         <h4 className="font-heading text-lg font-semibold">{assignment.name}</h4>
                       )}
-                      <span className="font-mono text-[0.68rem] text-muted-foreground">{assignment.period}</span>
+                      <span className="font-mono text-[0.68rem] text-muted-foreground">{formatPeriod(assignment.period)}</span>
                     </div>
                     <p className="mt-1 text-sm font-semibold text-foreground">{assignment.functionalScope}</p>
                     <p className="mt-2 text-sm leading-6 text-muted-foreground">{assignment.summary}</p>

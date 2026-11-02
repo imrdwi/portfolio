@@ -25,6 +25,7 @@ import { getAllCaseStudies, getCaseStudyBySlug } from "@/lib/case-studies";
 import { ogImage } from "@/lib/metadata";
 import { ogCardForProject } from "@/lib/og-content";
 import { defaultPublishedDate } from "@/data/projects";
+import { formatPeriod } from "@/data/experience";
 
 interface CaseStudyPageProps {
   params: Promise<{ slug: string }>;
@@ -49,8 +50,7 @@ export async function generateMetadata({ params }: CaseStudyPageProps): Promise<
   // article:published_time. The website-typed pages have no equivalent.
   const publishedTime = project.publishedDate ?? defaultPublishedDate;
   const modifiedTime = project.contentDate ?? publishedTime;
-  // No `absolute`, so the root layout's "%s | Rizki Kurniawan" template applies:
-  // these are the most-shared pages, and they used to carry no name at all.
+  // Shared titles carry the name explicitly; these are the most-shared pages.
   const socialTitle = `${project.seoTitle} | Rizki Kurniawan`;
   return {
     title: project.seoTitle,
@@ -183,7 +183,7 @@ export default async function CaseStudyPage({ params }: CaseStudyPageProps) {
           <Link href="/work" className="inline-flex items-center gap-2 text-sm font-semibold text-muted-foreground hover:text-signal">
             <ArrowLeft className="size-4" /> Complete work archive
           </Link>
-          <div className="mt-10 grid gap-8 lg:grid-cols-[1fr_18rem] lg:items-end">
+          <div className="mt-10 grid gap-8 lg:grid-cols-[1fr_18rem] lg:items-start">
             <div>
               <p className="technical-label">{project.status} / {project.type}</p>
               <h1 className="mt-4 max-w-5xl font-heading text-5xl font-semibold leading-[0.9] tracking-[-0.045em] sm:text-7xl">
@@ -202,7 +202,7 @@ export default async function CaseStudyPage({ params }: CaseStudyPageProps) {
               </div>
               <div className="border-b border-border py-3">
                 <dt className="field-label">Period</dt>
-                <dd className="mt-1">{project.period}</dd>
+                <dd className="mt-1">{formatPeriod(project.period)}</dd>
               </div>
               {project.link ? (
                 <div className="border-b border-border py-3">

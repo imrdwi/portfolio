@@ -115,15 +115,12 @@
   }
 
   .technical-label {
-    @apply font-mono text-[0.7rem] font-semibold uppercase tracking-[0.16em] text-signal;
+    @apply font-mono text-xs font-medium text-signal;
   }
 
-  /* Quieter sibling of .technical-label, for field labels inside a record
-     (definition lists, card captions, story beats) rather than section eyebrows.
-     Keeping section eyebrows signal-coloured and everything else muted is what
-     stops a page of ten mono labels from flattening into one visual weight. */
+  /* Muted sibling of .technical-label for field labels; eyebrows stay signal-coloured. */
   .field-label {
-    @apply font-mono text-[0.7rem] font-semibold uppercase tracking-[0.16em] text-muted-foreground;
+    @apply font-mono text-xs font-medium text-muted-foreground;
   }
 
   .control-surface {
@@ -167,10 +164,7 @@
   min-width: 0;
 }
 
-/* An overview figure leads straight into the first section heading. Without
-   this, the heading's full section margin leaves a 48px void above the rule
-   against 24px below it. Trimming both sides to 1.5rem keeps the break
-   visually balanced. */
+/* Balance the gap between an overview figure and the heading after it. */
 .prose figure:has(+ h2) {
   margin-bottom: 1.5rem;
 }
@@ -179,16 +173,11 @@
   margin-top: 1.5rem;
 }
 
-/* The article wrapper carries the top rule with no padding of its own, so a
-   leading figure sets its own offset: 1.5rem, the same breathing room a
-   section heading gets below its rule. */
+/* A leading figure or heading sits 1.5rem under the article wrapper's rule. */
 .prose > figure:first-child {
   margin-top: 1.5rem;
 }
 
-/* Same story when the article opens straight into a heading (case studies
-   without an overview figure): it sits under the wrapper's rule with the
-   same 1.5rem offset instead of drawing a second rule of its own. */
 .prose > h2:first-child {
   margin-top: 1.5rem;
   border-top: 0;
@@ -279,9 +268,12 @@
   }
 
   .print-resume header {
-    grid-template-columns: 1fr auto;
-    gap: 1rem;
     padding-bottom: 1rem;
+  }
+
+  .print-resume header .resume-contact,
+  .print-resume header .resume-engagement {
+    font-size: 9.5pt;
   }
 
   .print-resume header h1 {
@@ -300,6 +292,15 @@
 
   .print-resume .space-y-9 {
     gap: 0.65rem;
+  }
+
+  /* space-y-* uses margins, so tighten them here to keep the resume on two pages. */
+  .print-resume .space-y-9 > :not(:last-child) {
+    margin-block-end: 1.1rem;
+  }
+
+  .print-resume dl.space-y-3 > :not(:last-child) {
+    margin-block-end: 0.3rem;
   }
 
   .print-resume article p,

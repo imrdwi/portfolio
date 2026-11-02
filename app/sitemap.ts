@@ -2,12 +2,7 @@ import type { MetadataRoute } from "next";
 import { pageCopy, type PageCopy, type PageKey } from "@/data/page-copy";
 import { projects } from "@/data/projects";
 
-/**
- * Fallback `lastModified` for anything without its own `contentDate`.
- *
- * ISO 8601 with an offset rather than a bare date, so the timestamp is
- * unambiguous to crawlers instead of being read as midnight UTC.
- */
+/** Fallback `lastModified` for entries without a `contentDate`. */
 const defaultContentDate = "2026-09-04T23:25:21+07:00";
 
 // pageCopy is `as const satisfies`, which keeps literal types for the OG cards

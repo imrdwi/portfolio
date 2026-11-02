@@ -9,19 +9,11 @@ type CopyEmailButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement>;
 const emptySubscribe = () => () => {};
 
 /**
- * Renders as a plain button and copies `profile.email` to the clipboard
- * instead of opening a `mailto:` link, so the address isn't sitting in a
- * `mailto:` href for scrapers to harvest. Confirms with a toast rather than
- * `window.alert`, which would block the page.
+ * Copies `profile.email` instead of using a `mailto:` href scrapers can harvest.
+ * Confirmation comes from the single `CopyEmailToast` live region in the layout.
  *
- * Confirmation is rendered once by `CopyEmailToast` in the root layout. A
- * page can contain several email buttons, but it must never expose several
- * live regions announcing the same successful copy action.
- *
- * Before hydration there is no click handler, so the button is marked
- * `aria-disabled` rather than `disabled`: a real `disabled` attribute in the
- * server HTML drops the header's only contact control out of the tab order,
- * which is the one control that always has to be reachable.
+ * Before hydration it is `aria-disabled`, not `disabled`, so the header's only
+ * contact control stays in the tab order.
  */
 export const CopyEmailButton = React.forwardRef<HTMLButtonElement, CopyEmailButtonProps>(
   ({ onClick, children, className, disabled, ...props }, ref) => {

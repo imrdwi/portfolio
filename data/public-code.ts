@@ -4,13 +4,14 @@ export type PublicRepo = {
   summary: string;
   /** The case study or page whose claim this repo backs, when there is one. */
   related?: { label: string; href: string };
+  /** One-line note; only repos with one appear on the resume. */
+  resumeNote?: string;
 };
 
 /**
- * Public repositories, listed under the work archive. Rebuilds are written
- * from scratch with fictional data; none contains client code. Describe each
- * repo by what it does, and link a case study only when the repo rebuilds a
- * pattern that case study claims.
+ * Public repositories, listed under the work archive. Rebuilds are written from
+ * scratch with fictional data and contain no client code. Link a case study only
+ * when the repo rebuilds a pattern it claims.
  */
 export const publicRepos: PublicRepo[] = [
   {
@@ -18,12 +19,14 @@ export const publicRepos: PublicRepo[] = [
     href: "https://github.com/imrdwi/matched-giving-lock",
     summary: "A sponsor's match cap held under concurrent donations with a MySQL named lock, proven by a test that fires real concurrent requests.",
     related: { label: "Funraisin case study", href: "/work/funraisin" },
+    resumeNote: "Donation match cap held by a MySQL named lock, with a concurrency test.",
   },
   {
     name: "ups-monitor",
     href: "https://github.com/imrdwi/ups-monitor",
     summary: "UPS fleet monitoring: a queued poll per unit reads its network-card status page, flags units that stop reporting, and rates battery health from maintenance checks.",
     related: { label: "2021 freelance entry", href: "/experience#experience" },
+    resumeNote: "Laravel rebuild of the 2021 UPS freelance work, with queued polling.",
   },
   {
     name: "permitdesk",

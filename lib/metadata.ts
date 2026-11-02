@@ -13,13 +13,8 @@ type PageMetadata = {
 };
 
 /**
- * Builds the `og:image` entry for a page's `/og` route handler.
- *
- * The route lives at `<path>/og`, and `?v=` is a short hash of the card's own
- * content. The previous `opengraph-image.tsx` file convention added a hash
- * automatically; route handlers do not, and LinkedIn, Slack and X cache
- * aggressively, so the hash has to be supplied here or edited cards never
- * refresh.
+ * Builds the `og:image` entry for `<path>/og`. `?v=` hashes the card content
+ * because LinkedIn, Slack and X cache images aggressively.
  */
 export function ogImage(path: string, card: OgCardContent) {
   const version = createHash("sha1")

@@ -13,12 +13,8 @@ export type OgCardContent = {
 };
 
 /**
- * The exact content of every /og card.
- *
- * Both sides read this: the route handler renders it, and `ogImage()` in
- * lib/metadata.ts hashes it into the image URL's `?v=`. That is what replaces
- * the cache-busting hash the old `opengraph-image.tsx` file convention added
- * for free — change any string here and social scrapers see a new URL.
+ * The content of every /og card. The route handler renders it and `ogImage()`
+ * hashes it into the image URL, so any edit gives scrapers a new URL.
  */
 export const ogCards = {
   home: (): OgCardContent => ({

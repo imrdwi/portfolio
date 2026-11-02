@@ -4,6 +4,7 @@ import { CopyEmailButton } from "@/components/shared/copy-email-button";
 import { experiences } from "@/data/experience";
 import { profile } from "@/data/profile";
 import { pageCopy } from "@/data/page-copy";
+import { publicRepos } from "@/data/public-code";
 import { stackGroups } from "@/data/stack";
 import { createMetadata } from "@/lib/metadata";
 import { ogCards } from "@/lib/og-content";
@@ -24,19 +25,21 @@ export default function ResumePage() {
       </div>
 
       <article className="print-resume mx-auto max-w-5xl border border-border bg-background p-6 sm:p-10 lg:p-14 print:max-w-none print:border-0 print:p-0">
-        <header className="grid gap-7 border-b-2 border-foreground pb-8 md:grid-cols-[1fr_auto] md:items-end">
-          <div>
-            <p className="technical-label">Senior Backend Engineer</p>
-            <h1 className="mt-3 font-heading text-5xl font-semibold leading-none sm:text-6xl">{profile.name}</h1>
-            <p className="mt-4 max-w-2xl text-lg leading-7 text-muted-foreground">{profile.summary}</p>
-          </div>
-          <address className="space-y-1 text-sm not-italic md:text-right">
-            <p>{profile.location}</p>
-            <p>{profile.engagementSummary}</p>
-            <p><CopyEmailButton className="text-left text-signal">{profile.email}</CopyEmailButton></p>
-            <p><a href={profile.linkedin} target="_blank" rel="noopener noreferrer">linkedin.com/in/imrdwi<span className="sr-only"> (opens in a new tab)</span></a></p>
-            <p><a href={profile.github} target="_blank" rel="noopener noreferrer">github.com/imrdwi<span className="sr-only"> (opens in a new tab)</span></a></p>
+        {/* Single column so ATS text extraction reads it in order. */}
+        <header className="border-b-2 border-foreground pb-8">
+          <p className="technical-label">Senior Backend Engineer</p>
+          <h1 className="mt-3 font-heading text-5xl font-semibold leading-none sm:text-6xl">{profile.name}</h1>
+          <address className="resume-contact mt-4 flex flex-wrap gap-x-2 gap-y-1 text-sm not-italic">
+            <span>{profile.location}</span>
+            <span aria-hidden="true" className="text-muted-foreground">·</span>
+            <span><CopyEmailButton className="text-left text-signal">{profile.email}</CopyEmailButton></span>
+            <span aria-hidden="true" className="text-muted-foreground">·</span>
+            <span><a href={profile.linkedin} target="_blank" rel="noopener noreferrer">linkedin.com/in/imrdwi<span className="sr-only"> (opens in a new tab)</span></a></span>
+            <span aria-hidden="true" className="text-muted-foreground">·</span>
+            <span><a href={profile.github} target="_blank" rel="noopener noreferrer">github.com/imrdwi<span className="sr-only"> (opens in a new tab)</span></a></span>
           </address>
+          <p className="resume-engagement mt-1 text-sm">{profile.engagementSummary}</p>
+          <p className="mt-4 max-w-3xl text-lg leading-7 text-muted-foreground">{profile.summary}</p>
         </header>
 
         <section className="border-t border-border py-8">
@@ -85,12 +88,29 @@ export default function ResumePage() {
           </div>
         </section>
 
+        <section className="border-t border-border py-8">
+          <div className="grid gap-8 md:grid-cols-[12rem_1fr] print:grid-cols-1! print:gap-3">
+            <h2 className="technical-label">Public code</h2>
+            <ul className="space-y-1">
+              {publicRepos.filter((repo) => repo.resumeNote).map((repo) => (
+                <li key={repo.name} className="text-sm leading-6">
+                  <a href={repo.href} target="_blank" rel="noopener noreferrer" className="font-semibold">
+                    {repo.href.replace("https://", "")}
+                    <span className="sr-only"> (opens in a new tab)</span>
+                  </a>
+                  <span className="text-muted-foreground"> · {repo.resumeNote}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
+
         <section className="border-t border-border pt-8">
           <div className="grid gap-8 md:grid-cols-[12rem_1fr] print:grid-cols-1! print:gap-3">
             <h2 className="technical-label">Education</h2>
             <div>
               <h3 className="font-heading text-xl font-semibold">Computer Science &mdash; Software Engineering</h3>
-              <p className="text-muted-foreground">Jenderal Soedirman University &middot; Left before completing to work full-time</p>
+              <p className="text-muted-foreground">Jenderal Soedirman University</p>
             </div>
           </div>
         </section>

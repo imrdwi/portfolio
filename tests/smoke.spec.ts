@@ -109,9 +109,9 @@ test.describe("public portfolio smoke checks", () => {
 
   test("email copy exposes one live-region confirmation", async ({ page, baseURL }) => {
     await page.context().grantPermissions(["clipboard-read", "clipboard-write"], { origin: new URL(baseURL!).origin });
-    await page.goto("/", { waitUntil: "domcontentloaded" });
+    await page.goto("/contact", { waitUntil: "domcontentloaded" });
     await expect(page.locator('[role="status"]')).toHaveCount(0);
-    await page.locator("main").getByRole("button", { name: "Copy email", exact: true }).click();
+    await page.locator("main").getByRole("button", { name: "Copy email rizki@ortu.dev", exact: true }).click();
     await expect(page.locator('[role="status"]')).toHaveCount(1);
     await expect(page.locator('[role="status"]')).toHaveText("Copied rizki@ortu.dev to clipboard");
   });

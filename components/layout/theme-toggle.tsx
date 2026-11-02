@@ -35,7 +35,7 @@ export function ThemeToggle() {
             title={label}
             disabled={!mounted}
             onClick={() => setTheme(value)}
-            className="inline-flex size-10 touch-manipulation items-center justify-center text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-signal focus-visible:ring-inset disabled:cursor-wait aria-pressed:bg-primary aria-pressed:text-primary-foreground"
+            className="inline-flex size-10 touch-manipulation items-center justify-center text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-signal focus-visible:ring-inset disabled:cursor-wait aria-pressed:bg-muted aria-pressed:text-signal"
           >
             <Icon className="size-4" aria-hidden="true" />
           </button>

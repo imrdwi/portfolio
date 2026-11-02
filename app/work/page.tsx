@@ -51,7 +51,7 @@ export default function WorkPage() {
         </div>
       </section>
       <section className="site-shell py-8 sm:py-12">
-        <div className="mb-8 flex flex-wrap justify-between gap-3 border-b border-border pb-4 font-mono text-[0.7rem] uppercase tracking-[0.12em] text-muted-foreground">
+        <div className="mb-8 flex flex-wrap justify-between gap-3 border-b border-border pb-4 font-mono text-xs text-muted-foreground">
           <span>{projects.length} projects</span>
         </div>
         <div className="border-b border-border">
@@ -69,7 +69,7 @@ export default function WorkPage() {
         <div className="site-shell py-12 sm:py-16">
           <p className="technical-label">Public code</p>
           <h2 id="public-code" className="mt-3 text-3xl font-semibold tracking-[-0.03em] sm:text-4xl">
-            Code you can read.
+            Code you can read
           </h2>
           <p className="mt-4 max-w-3xl text-lg leading-8 text-muted-foreground">
             Client source stays private. The rebuilds here are written from scratch with fictional data and contain no client code.
