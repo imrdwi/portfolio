@@ -13,6 +13,17 @@ const nextConfig: NextConfig = {
         source: "/resume.pdf",
         headers: [{ key: "X-Robots-Tag", value: "noindex" }],
       },
+      {
+        // No CSP yet: Next's inline scripts and next-themes need nonces or
+        // 'unsafe-inline', so it needs a production test of its own.
+        source: "/:path*",
+        headers: [
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+          { key: "X-Frame-Options", value: "DENY" },
+        ],
+      },
     ];
   },
 };

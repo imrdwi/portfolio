@@ -3,7 +3,7 @@ import Link from "next/link";
 import { SectionHeading } from "@/components/shared/section-heading";
 import { createMetadata } from "@/lib/metadata";
 import { ogCards } from "@/lib/og-content";
-import { stackGroups } from "@/data/stack";
+import { siteChecks, stackGroups } from "@/data/stack";
 import { pageCopy } from "@/data/page-copy";
 
 export const metadata = createMetadata({
@@ -58,6 +58,18 @@ export default function StackPage() {
             </article>
           ))}
         </div>
+        <section className="mt-12" aria-labelledby="site-checks">
+          <h2 id="site-checks" className="font-heading text-2xl font-semibold">How this site verifies itself</h2>
+          <p className="mt-3 max-w-2xl leading-7 text-muted-foreground">A Playwright smoke suite runs against a production build of this site. It checks:</p>
+          <ul className="mt-5 max-w-3xl list-disc space-y-2 pl-5 leading-7">
+            {siteChecks.items.map((item) => <li key={item}>{item}</li>)}
+          </ul>
+          <p className="mt-5">
+            <a href={siteChecks.source} className="text-sm font-semibold text-signal hover:underline">
+              Read the tests <ArrowRight className="ml-1 inline size-4" aria-hidden="true" />
+            </a>
+          </p>
+        </section>
         <div className="mt-12 border-l-2 border-constraint pl-6">
           <p className="technical-label text-constraint">Exploration, not production depth</p>
           <p className="mt-3 max-w-2xl text-lg leading-7 text-muted-foreground">I&apos;m currently exploring Go and Rust, but they&apos;re not included above because I haven&apos;t used them in production yet.</p>

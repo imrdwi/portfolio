@@ -77,14 +77,8 @@ export const metadata: Metadata = {
     description: profile.seoDescription,
     images: [ogImage("/", ogCards.home())],
   },
-  robots: {
-    index: true,
-    follow: true,
-    googleBot: {
-      index: true,
-      follow: true,
-    },
-  },
+  // No robots block: index/follow is the default, and an explicit one would
+  // sit beside the noindex Next injects on 404s.
   manifest: "/site.webmanifest",
   appleWebApp: {
     title: "rizkik.me",

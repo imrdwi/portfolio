@@ -48,7 +48,7 @@ export const pageCopy = {
     ogAlt: "Rizki Kurniawan - 7+ years of production backend experience",
   },
   stack: {
-    contentDate: "2026-10-04T00:00:00+07:00",
+    contentDate: "2026-11-03T00:00:00+07:00",
     eyebrow: "Technical capability",
     title: "Backend technologies I use in production",
     description:

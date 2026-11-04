@@ -20,15 +20,21 @@ const navigation = [
 export function SiteHeader() {
   const pathname = usePathname();
   const [open, setOpen] = React.useState(false);
+  const toggleRef = React.useRef<HTMLButtonElement>(null);
 
   React.useEffect(() => {
+    if (!open) return;
     function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") setOpen(false);
+      if (event.key !== "Escape") return;
+      // Closing unmounts the menu; keep focus from falling back to <body>.
+      const focusInMenu = document.getElementById("mobile-navigation")?.contains(document.activeElement);
+      setOpen(false);
+      if (focusInMenu) toggleRef.current?.focus();
     }
 
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, []);
+  }, [open]);
 
   return (
     <header className="no-print sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur">
@@ -65,6 +71,7 @@ export function SiteHeader() {
           </CopyEmailButton>
           <ThemeToggle />
           <button
+            ref={toggleRef}
             type="button"
             aria-label={open ? "Close menu" : "Open menu"}
             aria-expanded={open}

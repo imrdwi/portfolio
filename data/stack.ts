@@ -109,3 +109,18 @@ export const stackGroups: StackGroup[] = [
 export const allTechnologies: string[] = Array.from(
   new Set(stackGroups.flatMap((group) => group.items)),
 );
+
+/**
+ * What the Playwright smoke suite checks, shown on /stack. Each line must match
+ * a test in tests/smoke.spec.ts; edit both together.
+ */
+export const siteChecks = {
+  source: "https://github.com/imrdwi/portfolio/blob/main/tests/smoke.spec.ts",
+  items: [
+    "Every page renders its title, description, and canonical URL without a console error",
+    "Every social preview image is a real 1200 by 630 PNG, checked from the file header",
+    "The résumé PDF is A4 with no Type 3 fonts, which older ATS parsers misread",
+    "Every page fits a 320px screen without horizontal scrolling",
+    "The diagrams enlarge and scroll by keyboard, and the copy-email button announces success or failure once",
+  ],
+};

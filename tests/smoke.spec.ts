@@ -31,7 +31,9 @@ test.describe("public portfolio smoke checks", () => {
     const consoleErrors: string[] = [];
     page.on("console", (message) => {
       // Vercel serves /_vercel/* analytics scripts only on its own hosting; locally they 404.
-      if (message.type() === "error" && !message.location().url.includes("/_vercel/")) {
+      // With nosniff the refusal is reported against the page, so match the text too.
+      const vercelScript = message.location().url.includes("/_vercel/") || message.text().includes("/_vercel/");
+      if (message.type() === "error" && !vercelScript) {
         consoleErrors.push(`${message.text()} (${message.location().url})`);
       }
     });
